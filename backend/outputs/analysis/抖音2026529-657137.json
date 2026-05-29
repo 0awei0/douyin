@@ -1,5 +1,5 @@
 {
-  "id": "d2a88aa3",
+  "id": "9c8513d4",
   "meta": {
     "duration": 29.070998,
     "resolution": "720x1280",
@@ -12,7 +12,7 @@
       "start_time": 0.0,
       "end_time": 4.0,
       "text": "天天也不运动就爱捣乱，说两句还不服，怎么有这样的！",
-      "purpose": "抛出奇葩海象人设吸引停留",
+      "purpose": "抛出反差萌点快速抓眼球",
       "hook_type": "冲突式"
     },
     {
@@ -24,11 +24,27 @@
       "hook_type": null
     },
     {
-      "type": "demo",
+      "type": "solution",
       "start_time": 10.0,
+      "end_time": 17.0,
+      "text": "今天咱们定个小目标，绕大厅走三圈就给你小鱼干吃",
+      "purpose": "给出督促运动的激励方案",
+      "hook_type": null
+    },
+    {
+      "type": "demo",
+      "start_time": 17.0,
+      "end_time": 24.0,
+      "text": "海象慢吞吞挪两步直接瘫倒在地，女生无奈扶额",
+      "purpose": "展示海象抗拒运动的搞笑状态",
+      "hook_type": null
+    },
+    {
+      "type": "cta",
+      "start_time": 24.0,
       "end_time": 29.1,
-      "text": "海象听完直接躺倒在地耍赖，完全不听劝",
-      "purpose": "展示海象不服管的搞笑反应",
+      "text": "你们说这货下次还能不运动吗，评论区告诉我",
+      "purpose": "引导观众留言互动提升评论量",
       "hook_type": null
     }
   ],
@@ -37,7 +53,7 @@
       "start_time": 0.0,
       "end_time": 1.0,
       "type": "medium",
-      "content": "第一视角拍地面躺平的胖海象，前景露出拍摄者的腿和手，背景是明亮办公室瓷砖地面，室内顶光，构图居中",
+      "content": "第一视角中景拍仰躺地面的圆胖海象，背景是明亮办公室瓷砖地面，顶光均匀，海象位于画面中心",
       "camera_move": "静止",
       "has_subtitle": true,
       "visual_effect": "无"
@@ -46,7 +62,7 @@
       "start_time": 1.0,
       "end_time": 4.0,
       "type": "medium",
-      "content": "穿蓝边工作服的女生坐在办公桌前操作平板，身后坐着胖海象，背景是办公室白板、饮水机、挂壁电视，光线均匀明亮",
+      "content": "中景拍穿蓝工服的女生坐办公桌前点平板，身后海象凑来盯她，背景是办公室白板、饮水机，光线明亮",
       "camera_move": "静止",
       "has_subtitle": false,
       "visual_effect": "无"
@@ -55,43 +71,61 @@
       "start_time": 4.0,
       "end_time": 10.0,
       "type": "medium",
-      "content": "女生转头对着身后海象说话，手指向海象，海象乖乖坐着看女生，背景保持不变",
+      "content": "女生侧头对着海象说话，手指指向海象，海象蹲坐地面一脸无辜，背景不变",
       "camera_move": "静止",
       "has_subtitle": true,
       "visual_effect": "无"
     },
     {
       "start_time": 10.0,
-      "end_time": 29.1,
+      "end_time": 17.0,
       "type": "medium",
-      "content": "海象听完直接躺倒地面耍赖，女生露出无奈表情，背景仍是办公室室内场景",
-      "camera_move": "轻微手持晃动",
+      "content": "女生起身伸手拽海象鳍，海象往后缩耍赖不肯动，背景是办公室空旷区域",
+      "camera_move": "轻微跟移",
+      "has_subtitle": true,
+      "visual_effect": "无"
+    },
+    {
+      "start_time": 17.0,
+      "end_time": 24.0,
+      "type": "wide",
+      "content": "全景拍海象慢吞吞在大厅瓷砖上挪步，走两步直接瘫倒，女生在旁叉腰注视",
+      "camera_move": "缓慢跟拍",
+      "has_subtitle": true,
+      "visual_effect": "无"
+    },
+    {
+      "start_time": 24.0,
+      "end_time": 29.1,
+      "type": "close-up",
+      "content": "特写海象趴在地上晃脑袋要吃的，女生对着镜头比无奈手势",
+      "camera_move": "静止",
       "has_subtitle": true,
       "visual_effect": "无"
     }
   ],
   "audio_structure": {
     "bgm": {
-      "name": "轻快搞怪日常BGM",
+      "name": "轻快搞怪卡通BGM",
       "mood": "搞笑轻松",
-      "bpm_range": "中"
+      "bpm_range": "中快"
     },
     "voiceover": {
       "has": true,
-      "style": "生活化搞笑",
+      "style": "亲切搞笑",
       "language": "中文"
     },
     "sound_effects": [
       {
         "time": 0.0,
-        "description": "尖锐的上课铃响音效"
+        "description": "尖锐的闹钟响铃声"
       },
       {
         "time": 0.0,
-        "description": "轻微室内环境底噪"
+        "description": "海象哼唧卖萌的咕哝音效"
       }
     ],
-    "rhythm_sync": "否，镜头切换未严格卡BGM节拍，跟随对话节奏推进"
+    "rhythm_sync": "是"
   },
   "packaging_structure": {
     "subtitle_style": {
@@ -105,48 +139,50 @@
       {
         "time": 0.0,
         "type": "硬切",
-        "description": "从海象躺地面画面切到女生操作平板画面"
+        "description": "海象躺地面镜头硬切到女生办公镜头"
       },
       {
         "time": 0.0,
         "type": "硬切",
-        "description": "从女生看平板画面切到女生转头和海象对话画面"
+        "description": "中景耍赖镜头硬切到大厅全景镜头"
       }
     ],
     "text_graphics": [
       {
-        "time_range": "0.0-1.0秒",
+        "time_range": "0.0-4.0秒",
         "type": "标题卡",
         "content": "天天也不运动就爱捣乱说两句还不服怎么有这样的！",
-        "style": "白色黑边气泡悬浮文字"
+        "style": "白底黑字大字体"
       }
     ],
     "cover_style": {
-      "main_text": "海象天天不运动还不服管",
-      "subtitle_text": "说两句就耍赖",
-      "style": "萌趣搞笑",
+      "main_text": "这海象也太不爱运动了",
+      "subtitle_text": "说两句还敢顶嘴",
+      "style": "搞笑萌宠风",
       "colors": [
-        "浅灰",
-        "粉红"
+        "白色",
+        "黑色",
+        "浅蓝"
       ],
-      "layout": "顶部配大文字，下方是海象躺地核心画面"
+      "layout": "海象躺地画面居中，顶部叠加文字"
     },
-    "overall_visual_tone": "明亮清新萌趣搞笑"
+    "overall_visual_tone": "明亮轻松搞笑，日常清新"
   },
   "transferable_features": {
-    "hook_strategy": "开头直接吐槽萌宠反差行为快速抓眼球",
-    "narrative_pattern": "冲突人设抛出→痛点吐槽→萌宠耍宝",
-    "pacing_pattern": "快开场→慢对话→快耍宝收尾",
+    "hook_strategy": "开头抛出萌宠离谱行为制造冲突抓眼球",
+    "narrative_pattern": "吐槽冲突→点明问题→给出方案→搞笑展示→引导互动",
+    "pacing_pattern": "快切开场→慢对话→快搞笑展示→快收尾",
     "engagement_techniques": [
       "反差萌",
-      "拟人对话",
-      "搞笑吐槽"
+      "拟人吐槽",
+      "搞笑耍赖",
+      "互动提问"
     ],
     "suitable_categories": [
       "萌宠",
-      "搞笑",
-      "日常剧情",
-      "海洋馆科普"
+      "日常搞笑",
+      "海洋馆科普",
+      "职场趣味"
     ]
   },
   "raw_response": null

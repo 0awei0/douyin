@@ -1,5 +1,5 @@
 {
-  "id": "890a6ec9",
+  "id": "ec379756",
   "meta": {
     "duration": 5.6,
     "resolution": "720x1280",
@@ -10,18 +10,26 @@
     {
       "type": "hook",
       "start_time": 0.0,
-      "end_time": 5.6,
-      "text": "마치 내가 다시 마중하러 온 순간 내가 숨이 뛴다 마구 뛴다 둥둥둥둥",
-      "purpose": "展示萌宠趣味高难动作，吸引用户停留",
+      "end_time": 2.0,
+      "text": "마치 내가 다시 마중하러 온 순간",
+      "purpose": "快速勾起观众好奇心",
       "hook_type": "冲突式"
+    },
+    {
+      "type": "demo",
+      "start_time": 2.0,
+      "end_time": 5.6,
+      "text": "내 가슴이 뛴다 마구 뛴다 둥둥둥둥",
+      "purpose": "展示仓鼠趣味攀爬动作",
+      "hook_type": null
     }
   ],
   "shots": [
     {
       "start_time": 0.0,
       "end_time": 5.6,
-      "type": "medium",
-      "content": "晴天阳台场景，背景摆放多盆多肉植物，暖黄色木墙与金属护栏清晰可见，一只橘色金丝熊仓鼠悬挂在细钢丝上，四肢交替发力向前挪动，试图完成走钢丝的高难度动作，光线明亮自然，构图居中聚焦仓鼠",
+      "type": "close-up",
+      "content": "固定机位拍摄悬挂在细钢丝上的橘色金丝熊，背景是摆满多肉盆栽的向阳阳台，旁侧是浅木色墙板，远处可见蓝天与居民楼，自然光充足，仓鼠位于画面视觉中心",
       "camera_move": "静止",
       "has_subtitle": false,
       "visual_effect": "无"
@@ -29,9 +37,9 @@
   ],
   "audio_structure": {
     "bgm": {
-      "name": "",
-      "mood": "",
-      "bpm_range": ""
+      "name": "韩语动感流行BGM",
+      "mood": "搞怪欢快",
+      "bpm_range": "快"
     },
     "voiceover": {
       "has": false,
@@ -39,7 +47,7 @@
       "language": ""
     },
     "sound_effects": [],
-    "rhythm_sync": ""
+    "rhythm_sync": "是"
   },
   "packaging_structure": {
     "subtitle_style": {
@@ -52,27 +60,31 @@
     "transitions": [],
     "text_graphics": [],
     "cover_style": {
-      "main_text": "",
-      "subtitle_text": "",
-      "style": "",
-      "colors": [],
-      "layout": ""
+      "main_text": "仓鼠走钢丝",
+      "subtitle_text": "萌宠搞笑名场面",
+      "style": "清新萌趣",
+      "colors": [
+        "暖橙色",
+        "天蓝色"
+      ],
+      "layout": "仓鼠主体居中，文字置于画面底部"
     },
-    "overall_visual_tone": ""
+    "overall_visual_tone": "明亮清新萌趣治愈"
   },
   "transferable_features": {
-    "hook_strategy": "开篇直接展示萌宠反常高难度趣味动作抓眼球",
-    "narrative_pattern": "单镜头趣味展示无额外叙事",
-    "pacing_pattern": "全程快节奏卡点BGM无拖沓",
+    "hook_strategy": "开篇直接展示反常萌宠行为抓注意力",
+    "narrative_pattern": "反常吸睛开场→全程展示趣味动作",
+    "pacing_pattern": "全程快节奏卡点，无冗余内容",
     "engagement_techniques": [
       "反差萌",
       "动作卡点",
-      "萌宠治愈"
+      "可爱治愈"
     ],
     "suitable_categories": [
       "萌宠",
-      "宠物日常",
-      "趣味搞笑"
+      "搞笑",
+      "生活日常",
+      "宠物创意"
     ]
   },
   "raw_response": null
