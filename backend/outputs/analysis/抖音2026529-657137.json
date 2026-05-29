@@ -1,5 +1,5 @@
 {
-  "id": "082dcede",
+  "id": "d2a88aa3",
   "meta": {
     "duration": 29.070998,
     "resolution": "720x1280",
@@ -12,27 +12,64 @@
       "start_time": 0.0,
       "end_time": 4.0,
       "text": "天天也不运动就爱捣乱，说两句还不服，怎么有这样的！",
-      "purpose": "快速引发观众好奇共鸣",
-      "hook_type": "共鸣式"
+      "purpose": "抛出奇葩海象人设吸引停留",
+      "hook_type": "冲突式"
     },
     {
       "type": "pain",
       "start_time": 4.0,
       "end_time": 10.0,
       "text": "你干啥来了，你看看你现在胖的，你赶紧运动运动吧行不行啊",
-      "purpose": "点明海象懒胖的核心问题",
+      "purpose": "点明海象肥胖不爱运动的问题",
       "hook_type": null
     },
     {
       "type": "demo",
       "start_time": 10.0,
       "end_time": 29.1,
-      "text": "海象不听劝阻耍赖捣乱，女子阻拦无效十分无奈",
-      "purpose": "展示海象不服管的搞笑状态",
+      "text": "海象听完直接躺倒在地耍赖，完全不听劝",
+      "purpose": "展示海象不服管的搞笑反应",
       "hook_type": null
     }
   ],
-  "shots": [],
+  "shots": [
+    {
+      "start_time": 0.0,
+      "end_time": 1.0,
+      "type": "medium",
+      "content": "第一视角拍地面躺平的胖海象，前景露出拍摄者的腿和手，背景是明亮办公室瓷砖地面，室内顶光，构图居中",
+      "camera_move": "静止",
+      "has_subtitle": true,
+      "visual_effect": "无"
+    },
+    {
+      "start_time": 1.0,
+      "end_time": 4.0,
+      "type": "medium",
+      "content": "穿蓝边工作服的女生坐在办公桌前操作平板，身后坐着胖海象，背景是办公室白板、饮水机、挂壁电视，光线均匀明亮",
+      "camera_move": "静止",
+      "has_subtitle": false,
+      "visual_effect": "无"
+    },
+    {
+      "start_time": 4.0,
+      "end_time": 10.0,
+      "type": "medium",
+      "content": "女生转头对着身后海象说话，手指向海象，海象乖乖坐着看女生，背景保持不变",
+      "camera_move": "静止",
+      "has_subtitle": true,
+      "visual_effect": "无"
+    },
+    {
+      "start_time": 10.0,
+      "end_time": 29.1,
+      "type": "medium",
+      "content": "海象听完直接躺倒地面耍赖，女生露出无奈表情，背景仍是办公室室内场景",
+      "camera_move": "轻微手持晃动",
+      "has_subtitle": true,
+      "visual_effect": "无"
+    }
+  ],
   "audio_structure": {
     "bgm": {
       "name": "轻快搞怪日常BGM",
@@ -41,73 +78,74 @@
     },
     "voiceover": {
       "has": true,
-      "style": "生活化吐槽",
+      "style": "生活化搞笑",
       "language": "中文"
     },
     "sound_effects": [
       {
         "time": 0.0,
-        "description": "尖锐的闹铃铃声"
+        "description": "尖锐的上课铃响音效"
       },
       {
         "time": 0.0,
-        "description": "海象哼唧撒娇声"
+        "description": "轻微室内环境底噪"
       }
     ],
-    "rhythm_sync": "是"
+    "rhythm_sync": "否，镜头切换未严格卡BGM节拍，跟随对话节奏推进"
   },
   "packaging_structure": {
     "subtitle_style": {
-      "font_size": "中",
+      "font_size": "大",
       "color": "黑色",
-      "position": "屏幕底部居中",
+      "position": "底部居中",
       "animation": "逐字弹出",
-      "outline": "白色细描边"
+      "outline": "白色粗描边"
     },
     "transitions": [
       {
         "time": 0.0,
         "type": "硬切",
-        "description": "从海象躺地画面硬切到女子坐桌前画面"
+        "description": "从海象躺地面画面切到女生操作平板画面"
       },
       {
         "time": 0.0,
         "type": "硬切",
-        "description": "从对话画面硬切到海象捣乱画面"
+        "description": "从女生看平板画面切到女生转头和海象对话画面"
       }
     ],
     "text_graphics": [
       {
         "time_range": "0.0-1.0秒",
-        "type": "标题条",
+        "type": "标题卡",
         "content": "天天也不运动就爱捣乱说两句还不服怎么有这样的！",
-        "style": "白色黑边大字体悬浮气泡样式"
+        "style": "白色黑边气泡悬浮文字"
       }
     ],
     "cover_style": {
-      "main_text": "海象天天不运动还爱捣乱",
-      "subtitle_text": "说两句还不服",
-      "style": "趣味萌宠风",
+      "main_text": "海象天天不运动还不服管",
+      "subtitle_text": "说两句就耍赖",
+      "style": "萌趣搞笑",
       "colors": [
-        "浅白",
-        "浅蓝"
+        "浅灰",
+        "粉红"
       ],
-      "layout": "顶部文字叠加在海象躺地画面上"
+      "layout": "顶部配大文字，下方是海象躺地核心画面"
     },
-    "overall_visual_tone": "明亮日常，轻松搞笑"
+    "overall_visual_tone": "明亮清新萌趣搞笑"
   },
   "transferable_features": {
-    "hook_strategy": "开头用拟人化吐槽引发观众共鸣好奇",
-    "narrative_pattern": "共鸣开场→点明问题→搞笑展示",
-    "pacing_pattern": "快开场→慢对话→快动作搞笑",
+    "hook_strategy": "开头直接吐槽萌宠反差行为快速抓眼球",
+    "narrative_pattern": "冲突人设抛出→痛点吐槽→萌宠耍宝",
+    "pacing_pattern": "快开场→慢对话→快耍宝收尾",
     "engagement_techniques": [
-      "拟人化",
       "反差萌",
+      "拟人对话",
       "搞笑吐槽"
     ],
     "suitable_categories": [
       "萌宠",
-      "日常搞笑",
+      "搞笑",
+      "日常剧情",
       "海洋馆科普"
     ]
   },
