@@ -1,0 +1,36 @@
+# Environment / Secrets
+.env
+*.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.eggs/
+*.egg-info/
+
+# Node
+node_modules/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Uploads & temp outputs (binary files)
+backend/uploads/
+backend/data.db*
+videos/
+
+# Allow analysis JSON results, ignore other outputs
+backend/outputs/*
+!backend/outputs/analysis/
+
+# Database
+*.db
+*.db-shm
+*.db-wal

@@ -1,0 +1,79 @@
+{
+  "id": "055a8e35",
+  "meta": {
+    "duration": 5.6,
+    "resolution": "720x1280",
+    "fps": 30.0,
+    "cover_frame": null
+  },
+  "script_structure": [
+    {
+      "type": "hook",
+      "start_time": 0.0,
+      "end_time": 5.6,
+      "text": "无清晰旁白语音，仅含韩语流行BGM人声",
+      "purpose": "快速抓取用户注意力留住视线",
+      "hook_type": "共鸣式"
+    }
+  ],
+  "shots": [
+    {
+      "start_time": 0.0,
+      "end_time": 5.6,
+      "type": "medium",
+      "content": "居中画面主体是橙黄色金丝熊仓鼠，悬挂在阳台细线上不断调整抓握姿势试图攀爬，背景是摆满多肉盆栽的阳台，晴天自然光充足，背景虚化突出仓鼠",
+      "camera_move": "静止",
+      "has_subtitle": false,
+      "visual_effect": "无"
+    }
+  ],
+  "audio_structure": {
+    "bgm": {
+      "name": "",
+      "mood": "",
+      "bpm_range": ""
+    },
+    "voiceover": {
+      "has": false,
+      "style": "",
+      "language": ""
+    },
+    "sound_effects": [],
+    "rhythm_sync": ""
+  },
+  "packaging_structure": {
+    "subtitle_style": {
+      "font_size": "",
+      "color": "",
+      "position": "",
+      "animation": "",
+      "outline": ""
+    },
+    "transitions": [],
+    "text_graphics": [],
+    "cover_style": {
+      "main_text": "",
+      "subtitle_text": "",
+      "style": "",
+      "colors": [],
+      "layout": ""
+    },
+    "overall_visual_tone": ""
+  },
+  "transferable_features": {
+    "hook_strategy": "开篇直接展示萌宠高难度搞怪动作瞬间抓眼",
+    "narrative_pattern": "单镜头趣味瞬间直接展示",
+    "pacing_pattern": "全程快节奏卡点无冗余内容",
+    "engagement_techniques": [
+      "萌宠反差",
+      "动作卡点",
+      "治愈趣味"
+    ],
+    "suitable_categories": [
+      "萌宠日常",
+      "趣味生活",
+      "宠物搞笑"
+    ]
+  },
+  "raw_response": null
+}

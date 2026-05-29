@@ -1,0 +1,125 @@
+{
+  "id": "85564d12",
+  "meta": {
+    "duration": 10.791667,
+    "resolution": "960x720",
+    "fps": 24.0,
+    "cover_frame": null
+  },
+  "script_structure": [
+    {
+      "type": "hook",
+      "start_time": 0.0,
+      "end_time": 8.0,
+      "text": "这个就是我呀，头上有两个妙脆角，然后呢，可以变成抱小兔",
+      "purpose": "萌宠拟人自我介绍抓眼球",
+      "hook_type": "趣味共鸣式"
+    },
+    {
+      "type": "cta",
+      "start_time": 8.0,
+      "end_time": 10.8,
+      "text": "抖音",
+      "purpose": "引导用户搜索参与互动",
+      "hook_type": null
+    }
+  ],
+  "shots": [
+    {
+      "start_time": 0.0,
+      "end_time": 8.0,
+      "type": "close-up",
+      "content": "浅橘色猫咪脸部大特写，背景为夜晚居民楼与绿植，补光打亮猫咪面部，居中构图",
+      "camera_move": "静止",
+      "has_subtitle": true,
+      "visual_effect": "无"
+    },
+    {
+      "start_time": 8.0,
+      "end_time": 10.8,
+      "type": "text-overlay",
+      "content": "深色渐变背景，展示抖音搜索界面，含搜索框与扫码提示，居中构图光线均匀",
+      "camera_move": "静止",
+      "has_subtitle": false,
+      "visual_effect": "无"
+    }
+  ],
+  "audio_structure": {
+    "bgm": {
+      "name": "可爱童声儿歌风格BGM",
+      "mood": "欢快",
+      "bpm_range": "中"
+    },
+    "voiceover": {
+      "has": true,
+      "style": "童声",
+      "language": "中文"
+    },
+    "sound_effects": [
+      {
+        "time": 9.2,
+        "description": "抖音品牌开屏音效"
+      }
+    ],
+    "rhythm_sync": "是，镜头切换卡点BGM结束节点"
+  },
+  "packaging_structure": {
+    "subtitle_style": {
+      "font_size": "大",
+      "color": "白色",
+      "position": "画面顶部居中",
+      "animation": "无",
+      "outline": "无描边"
+    },
+    "transitions": [
+      {
+        "time": 8.0,
+        "type": "硬切",
+        "description": "从猫咪特写直接切到抖音引导页"
+      }
+    ],
+    "text_graphics": [
+      {
+        "time_range": "0-8s",
+        "type": "标题条",
+        "content": "这个就是我呀 头上有两个妙脆角",
+        "style": "白色粗体居中文字"
+      },
+      {
+        "time_range": "8-10.8s",
+        "type": "卖点卡",
+        "content": "大家都在抖音 搜索 猫头互动",
+        "style": "抖音官方引导页样式"
+      }
+    ],
+    "cover_style": {
+      "main_text": "头上有两个妙脆角的小猫",
+      "subtitle_text": "萌宠变身抱小兔",
+      "style": "可爱萌系",
+      "colors": [
+        "浅橘色",
+        "深黑色",
+        "白色"
+      ],
+      "layout": "猫咪脸部居中占满封面"
+    },
+    "overall_visual_tone": "软萌可爱治愈，暗调暖光"
+  },
+  "transferable_features": {
+    "hook_strategy": "萌宠拟人趣味自我介绍快速抓注意力",
+    "narrative_pattern": "萌趣展示→引导互动行动",
+    "pacing_pattern": "慢萌宠展示→快收尾引导",
+    "engagement_techniques": [
+      "拟人",
+      "萌系反差",
+      "趣味联想"
+    ],
+    "suitable_categories": [
+      "萌宠",
+      "生活日常",
+      "特效互动",
+      "短视频引流"
+    ]
+  },
+  "raw_response": null
+}

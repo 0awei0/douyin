@@ -1,0 +1,115 @@
+{
+  "id": "082dcede",
+  "meta": {
+    "duration": 29.070998,
+    "resolution": "720x1280",
+    "fps": 30.0,
+    "cover_frame": null
+  },
+  "script_structure": [
+    {
+      "type": "hook",
+      "start_time": 0.0,
+      "end_time": 4.0,
+      "text": "天天也不运动就爱捣乱，说两句还不服，怎么有这样的！",
+      "purpose": "快速引发观众好奇共鸣",
+      "hook_type": "共鸣式"
+    },
+    {
+      "type": "pain",
+      "start_time": 4.0,
+      "end_time": 10.0,
+      "text": "你干啥来了，你看看你现在胖的，你赶紧运动运动吧行不行啊",
+      "purpose": "点明海象懒胖的核心问题",
+      "hook_type": null
+    },
+    {
+      "type": "demo",
+      "start_time": 10.0,
+      "end_time": 29.1,
+      "text": "海象不听劝阻耍赖捣乱，女子阻拦无效十分无奈",
+      "purpose": "展示海象不服管的搞笑状态",
+      "hook_type": null
+    }
+  ],
+  "shots": [],
+  "audio_structure": {
+    "bgm": {
+      "name": "轻快搞怪日常BGM",
+      "mood": "搞笑轻松",
+      "bpm_range": "中"
+    },
+    "voiceover": {
+      "has": true,
+      "style": "生活化吐槽",
+      "language": "中文"
+    },
+    "sound_effects": [
+      {
+        "time": 0.0,
+        "description": "尖锐的闹铃铃声"
+      },
+      {
+        "time": 0.0,
+        "description": "海象哼唧撒娇声"
+      }
+    ],
+    "rhythm_sync": "是"
+  },
+  "packaging_structure": {
+    "subtitle_style": {
+      "font_size": "中",
+      "color": "黑色",
+      "position": "屏幕底部居中",
+      "animation": "逐字弹出",
+      "outline": "白色细描边"
+    },
+    "transitions": [
+      {
+        "time": 0.0,
+        "type": "硬切",
+        "description": "从海象躺地画面硬切到女子坐桌前画面"
+      },
+      {
+        "time": 0.0,
+        "type": "硬切",
+        "description": "从对话画面硬切到海象捣乱画面"
+      }
+    ],
+    "text_graphics": [
+      {
+        "time_range": "0.0-1.0秒",
+        "type": "标题条",
+        "content": "天天也不运动就爱捣乱说两句还不服怎么有这样的！",
+        "style": "白色黑边大字体悬浮气泡样式"
+      }
+    ],
+    "cover_style": {
+      "main_text": "海象天天不运动还爱捣乱",
+      "subtitle_text": "说两句还不服",
+      "style": "趣味萌宠风",
+      "colors": [
+        "浅白",
+        "浅蓝"
+      ],
+      "layout": "顶部文字叠加在海象躺地画面上"
+    },
+    "overall_visual_tone": "明亮日常，轻松搞笑"
+  },
+  "transferable_features": {
+    "hook_strategy": "开头用拟人化吐槽引发观众共鸣好奇",
+    "narrative_pattern": "共鸣开场→点明问题→搞笑展示",
+    "pacing_pattern": "快开场→慢对话→快动作搞笑",
+    "engagement_techniques": [
+      "拟人化",
+      "反差萌",
+      "搞笑吐槽"
+    ],
+    "suitable_categories": [
+      "萌宠",
+      "日常搞笑",
+      "海洋馆科普"
+    ]
+  },
+  "raw_response": null
+}
