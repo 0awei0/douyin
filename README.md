@@ -58,10 +58,11 @@ conda run -n agent uvicorn app.main:app --reload --port 8000
 ```bash
 cd frontend
 npm install
+cp .env.example .env
 npm run dev
 ```
 
-打开 Vite 输出的本地地址，一般是 `http://localhost:3000`。页面会通过 Vite proxy 调用 `http://localhost:8000/api`。
+打开 Vite 输出的本地地址，一般是 `http://localhost:3000`。页面会通过 Vite proxy 调用 `VITE_API_PROXY_TARGET`，默认是 `http://127.0.0.1:8010/api`，避免和本机其他 8000 服务冲突。
 
 ## 本地素材
 
@@ -135,13 +136,31 @@ backend/outputs/analysis_runs/<task_id>/
 
 其中包含抽帧、`contact_sheet.jpg`、`raw_doubao_result.json`、`normalized_structure.json`、`spatial_summary.md` 和 `meta.json`。
 
+## 自抽帧空间审计
+
+默认分析仍然把完整视频传给 Doubao 视频理解，由 `video_url.fps` 控制模型采样。项目同时提供一个可选的自抽帧二阶段审计：
+
+```bash
+ENABLE_FRAME_SPATIAL_AUDIT=true
+```
+
+或调用 API 时传 `use_frame_audit=true`。
+
+自抽帧策略不是只靠 scene cut，而是混合采样：
+
+- 短视频每 1 秒兜底抽帧，60 秒左右视频每 2 秒兜底抽帧。
+- 强制加入分析得到的每个镜头的起点、中点和终点附近。
+- 最多保留约 48 张，超出时均匀降采样，优先保证全片时间覆盖。
+
+这些图片会按时间顺序以多张 `image_url` 传给模型，并在文本里标注 `frame 001 = 0.00s`。这一阶段只问主体大小、位置、near/mid/far/tiny/environment 空间角色，不让模型判断音频、剪辑或剧情。这样可以校正“远处小人被当成普通环境”这类问题，同时不替代完整视频理解。
+
 ## 常用命令
 
 后端服务：
 
 ```bash
 cd backend
-conda run -n agent uvicorn app.main:app --reload --port 8000
+conda run -n agent uvicorn app.main:app --reload --port 8010
 ```
 
 前端服务：
@@ -154,10 +173,11 @@ npm run dev
 一键 pipeline API：
 
 ```bash
-curl -X POST http://localhost:8000/api/pipeline/run \
+curl -X POST http://localhost:8010/api/pipeline/run \
   -F "source_video=@videos/1.mp4" \
   -F "target_video=@transfer-videos/1.mp4" \
-  -F "target_description=三姐妹操场手势舞，迁移近到远空间结构"
+  -F "target_description=三姐妹操场手势舞，迁移近到远空间结构" \
+  -F "use_frame_audit=false"
 ```
 
 ## 生成当前 case

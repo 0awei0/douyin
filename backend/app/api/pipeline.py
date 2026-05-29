@@ -24,6 +24,7 @@ async def run_pipeline(
     source_video: UploadFile = File(...),
     target_video: UploadFile = File(...),
     target_description: str = Form(None),
+    use_frame_audit: bool = Form(False),
 ):
     """一键执行完整流水线
 
@@ -45,10 +46,10 @@ async def run_pipeline(
 
     try:
         # Step 1: 分析样例视频
-        source = await analyze_video_structure(str(source_path))
+        source = await analyze_video_structure(str(source_path), use_frame_audit=use_frame_audit)
 
         # Step 2: 分析目标视频
-        target = await analyze_video_structure(str(target_path))
+        target = await analyze_video_structure(str(target_path), use_frame_audit=use_frame_audit)
 
         # Step 3: 构建目标描述
         if not target_description:

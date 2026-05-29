@@ -20,6 +20,7 @@ from ..models.video_structure import (
 )
 from .doubao_client import analyze_video_with_doubao
 from .analysis_artifacts import save_analysis_artifacts
+from .spatial_audit import audit_spatial_with_frames, merge_spatial_audit
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -46,7 +47,7 @@ def get_video_meta(video_path: str) -> VideoMeta:
     return VideoMeta(duration=duration, resolution=f"{w}x{h}", fps=fps)
 
 
-async def analyze_video_structure(video_path: str) -> VideoStructure:
+async def analyze_video_structure(video_path: str, use_frame_audit: bool | None = None) -> VideoStructure:
     task_id = str(uuid.uuid4())[:8]
 
     print(f"[{task_id}] 提取视频元信息...")
@@ -60,7 +61,23 @@ async def analyze_video_structure(video_path: str) -> VideoStructure:
 
     print(f"[{task_id}] 保存分析中间文件...")
     sample_fps = safe_float(doubao_result.get("_analysis_sample_fps"), 0.0)
-    save_analysis_artifacts(task_id, video_path, structure, doubao_result, sample_fps)
+    artifact_dir = save_analysis_artifacts(task_id, video_path, structure, doubao_result, sample_fps)
+
+    if use_frame_audit is None:
+        use_frame_audit = os.environ.get("ENABLE_FRAME_SPATIAL_AUDIT", "").lower() in {"1", "true", "yes"}
+
+    if use_frame_audit:
+        print(f"[{task_id}] 使用自抽帧做空间轨迹审计...")
+        audit = await audit_spatial_with_frames(video_path, structure, artifact_dir)
+        structure = merge_spatial_audit(structure, audit)
+        (artifact_dir / "normalized_structure.json").write_text(
+            structure.model_dump_json(indent=2),
+            encoding="utf-8",
+        )
+        (artifact_dir / "spatial_summary.md").write_text(
+            spatial_summary_text(structure),
+            encoding="utf-8",
+        )
 
     return structure
 
@@ -159,3 +176,21 @@ def build_video_structure(task_id: str, meta: VideoMeta, r: dict) -> VideoStruct
     return VideoStructure(id=task_id, meta=meta, script_structure=sections, shots=shots,
                           audio_structure=audio, packaging_structure=packaging,
                           transferable_features=tf, raw_response=r.get("raw_response"))
+
+
+def spatial_summary_text(structure: VideoStructure) -> str:
+    lines = ["# Spatial Summary", ""]
+    tf = structure.transferable_features
+    lines.append(f"- spatial_pattern: {tf.spatial_pattern}")
+    lines.append(f"- subject_trajectory: {tf.subject_trajectory}")
+    lines.append(f"- composition_pattern: {tf.composition_pattern}")
+    lines.append("")
+    lines.append("## Shots")
+    for shot in structure.shots:
+        lines.append(
+            f"- {shot.start_time:.1f}-{shot.end_time:.1f}s "
+            f"[{shot.type}] distance={shot.subject_distance or '-'}, "
+            f"position={shot.subject_position or '-'}, motion={shot.subject_motion or '-'}"
+        )
+        lines.append(f"  {shot.content}")
+    return "\n".join(lines) + "\n"

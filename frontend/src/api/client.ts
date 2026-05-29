@@ -1,5 +1,16 @@
 const BASE_URL = '/api'
 
+async function readError(res: Response, fallback: string): Promise<Error> {
+  let detail = ''
+  try {
+    const data = await res.json()
+    detail = typeof data?.detail === 'string' ? data.detail : JSON.stringify(data)
+  } catch {
+    detail = await res.text().catch(() => '')
+  }
+  return new Error(`${fallback}: ${detail || res.statusText || res.status}`)
+}
+
 export interface UploadResponse {
   file_id: string
   filename: string
@@ -162,7 +173,7 @@ export async function uploadVideo(file: File): Promise<UploadResponse> {
     method: 'POST',
     body: formData,
   })
-  if (!res.ok) throw new Error(`上传失败: ${res.statusText}`)
+  if (!res.ok) throw await readError(res, '上传失败')
   return res.json()
 }
 
@@ -172,7 +183,7 @@ export async function analyzeStructure(videoPath: string): Promise<AnalyzeRespon
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ video_path: videoPath }),
   })
-  if (!res.ok) throw new Error(`分析失败: ${res.statusText}`)
+  if (!res.ok) throw await readError(res, '分析失败')
   return res.json()
 }
 
@@ -187,7 +198,7 @@ export async function runTransfer(
   })
   if (targetDescription) params.set('target_description', targetDescription)
   const res = await fetch(`${BASE_URL}/transfer/?${params}`, { method: 'POST' })
-  if (!res.ok) throw new Error(`迁移失败: ${res.statusText}`)
+  if (!res.ok) throw await readError(res, '迁移失败')
   return res.json()
 }
 
@@ -202,7 +213,7 @@ export async function generateVideo(
     use_ai_image: String(useAiImage),
   })
   const res = await fetch(`${BASE_URL}/generate/?${params}`, { method: 'POST' })
-  if (!res.ok) throw new Error(`生成失败: ${res.statusText}`)
+  if (!res.ok) throw await readError(res, '生成失败')
   return res.json()
 }
 
@@ -219,6 +230,6 @@ export async function runPipeline(
     method: 'POST',
     body: formData,
   })
-  if (!res.ok) throw new Error(`流水线失败: ${res.statusText}`)
+  if (!res.ok) throw await readError(res, '流水线失败')
   return res.json()
 }

@@ -45,8 +45,13 @@ def optimize_transfer_result(
     for i, shot in enumerate(storyboard, start=1):
         shot["shot_number"] = i
 
+    script = _sanitize_script_for_spatial(_normalize_script(optimized.get("script"), storyboard))
+    _rewrite_viewer_subtitles(storyboard, script)
+    _sync_cta_subtitles(storyboard, script)
+
     optimized["storyboard"] = storyboard
-    optimized["script"] = _sanitize_script_for_spatial(_normalize_script(optimized.get("script"), storyboard))
+    optimized["script"] = script
+    optimized["material_needs"] = _material_needs_from_storyboard(storyboard, optimized.get("material_needs"))
     optimized["timeline_metrics"] = _timeline_metrics(storyboard, duration, cta_added)
     optimized["material_coverage"] = _material_coverage(storyboard)
     return optimized
@@ -104,6 +109,7 @@ def _normalize_storyboard(storyboard: list[dict[str, Any]], target_duration: flo
 
         edit = shot.get("edit") if isinstance(shot.get("edit"), dict) else {}
         edit.setdefault("crop", _crop_for_type(shot_type))
+        edit["crop"] = _adjust_crop_for_content(str(edit.get("crop", "")), shot_type, str(shot.get("content", "")))
         edit.setdefault("pace", "fast-cut" if desired <= 3.0 else "hold")
         if start is not None and end is not None:
             source_duration = max(end - start, 0.3)
@@ -249,6 +255,151 @@ def _timeline_metrics(storyboard: list[dict[str, Any]], target_duration: float, 
             if isinstance(shot.get("edit"), dict) and shot.get("edit", {}).get("spatial_role")
         ],
     }
+
+
+def _sync_cta_subtitles(storyboard: list[dict[str, Any]], script: list[dict[str, Any]]) -> None:
+    cta_text = _cta_text_from_script(script)
+    if not cta_text:
+        cta_text = _cta_text_from_storyboard(storyboard)
+    if not cta_text:
+        return
+
+    for shot in storyboard:
+        if _is_cta(shot):
+            shot["subtitle"] = cta_text
+            break
+
+
+def _rewrite_viewer_subtitles(storyboard: list[dict[str, Any]], script: list[dict[str, Any]]) -> None:
+    """Replace internal spatial labels with viewer-facing short-video captions."""
+    cta_text = _cta_text_from_script(script) or _cta_text_from_storyboard(storyboard)
+    for shot in storyboard:
+        if _is_cta(shot):
+            continue
+
+        role = shot.get("edit", {}).get("spatial_role", "") if isinstance(shot.get("edit"), dict) else ""
+        current = str(shot.get("subtitle", "")).strip()
+        if current and not _looks_like_internal_subtitle(current):
+            continue
+
+        shot["subtitle"] = _viewer_subtitle_for_role(role, shot, cta_text)
+
+
+def _looks_like_internal_subtitle(text: str) -> bool:
+    return text in {
+        "近处开场",
+        "位置拉开",
+        "变远变小",
+        "远处手势舞",
+        "环境接住节奏",
+        "近处手势舞",
+        "位置逐渐拉远",
+        "校园感拉满",
+    }
+
+
+def _viewer_subtitle_for_role(role: str, shot: dict[str, Any], cta_text: str) -> str:
+    content = str(shot.get("content", ""))
+    if role == "near":
+        return "开拍开拍"
+    if role == "mid":
+        if any(key in content for key in ("笑场", "不协调", "翻车")):
+            return "这段太真实"
+        return "手势先跟上"
+    if role == "far":
+        return "操场版来了"
+    if role == "empty":
+        return "越来越有感觉"
+    if role == "cta":
+        return cta_text or "搜同款挑战"
+    return _shorten_subtitle(str(shot.get("subtitle", "")) or "这段太真实")
+
+
+def _cta_text_from_script(script: list[dict[str, Any]]) -> str:
+    for seg in script:
+        if str(seg.get("type", "")).lower() != "cta":
+            continue
+        cleaned = _clean_cta_text(str(seg.get("text", "")))
+        if cleaned and not _is_generic_cta_text(cleaned):
+            return cleaned
+    return ""
+
+
+def _cta_text_from_storyboard(storyboard: list[dict[str, Any]]) -> str:
+    for shot in storyboard:
+        if not _is_cta(shot):
+            continue
+        text = f"{shot.get('content', '')} {shot.get('subtitle', '')}"
+        for pattern in (r"带有([^，。、“”\"「」]{2,24}挑战)", r"[「\"]([^」\"]{2,24}挑战)[」\"]"):
+            match = re.search(pattern, text)
+            if match:
+                cleaned = _clean_cta_text(match.group(1))
+                if cleaned and not _is_generic_cta_text(cleaned):
+                    return cleaned
+    return ""
+
+
+def _clean_cta_text(text: str) -> str:
+    cleaned = re.sub(r"\s+", "", text)
+    cleaned = cleaned.replace("大家都在抖音搜索", "")
+    cleaned = re.sub(r"^(抖音)?(搜索|搜)", "", cleaned)
+    cleaned = cleaned.replace("关键词", "")
+    return _shorten_subtitle(cleaned, max_chars=18)
+
+
+def _is_generic_cta_text(text: str) -> bool:
+    return text in {"同款挑战", "参与挑战", "同款参与挑战", "搜同款参与挑战", "来参与同款挑战"}
+
+
+def _material_needs_from_storyboard(storyboard: list[dict[str, Any]], existing: Any) -> dict[str, Any]:
+    required = []
+    for shot in storyboard:
+        role = shot.get("edit", {}).get("spatial_role", "") if isinstance(shot.get("edit"), dict) else ""
+        start, end = parse_source_range(str(shot.get("source", "")))
+        if start is not None and end is not None:
+            required.append(
+                {
+                    "type": "实拍素材",
+                    "description": f"{shot.get('source')} 的{_role_label(role)}片段",
+                    "purpose": _role_purpose(role),
+                }
+            )
+        elif _is_cta(shot):
+            required.append(
+                {
+                    "type": "图文素材",
+                    "description": f"抖音搜索 CTA 页面：{shot.get('subtitle', '同款挑战')}",
+                    "purpose": "补齐样例结尾搜索引导，承接挑战参与动作。",
+                }
+            )
+
+    optional = []
+    if isinstance(existing, dict):
+        raw_optional = existing.get("可选素材列表", [])
+        if isinstance(raw_optional, list):
+            optional = [item for item in raw_optional if isinstance(item, dict)]
+
+    return {"必需素材列表": required, "可选素材列表": optional}
+
+
+def _role_label(role: str) -> str:
+    return {
+        "near": "近景开场",
+        "mid": "中景手势动作",
+        "far": "远景主体变小",
+        "empty": "环境释放",
+        "cta": "搜索引导",
+    }.get(role, "可用")
+
+
+def _role_purpose(role: str) -> str:
+    return {
+        "near": "作为开场 hook，保留目标素材原本的近距离亲近感。",
+        "mid": "承接近景，展示清晰手势动作和人物关系。",
+        "far": "迁移样例主体变远、画面占比变小的空间轨迹。",
+        "empty": "让操场环境接住节奏，形成释放感。",
+        "cta": "引导用户搜索并参与同款挑战。",
+    }.get(role, "支撑迁移后分镜。")
 
 
 def _material_coverage(storyboard: list[dict[str, Any]]) -> dict[str, Any]:
@@ -562,6 +713,12 @@ def _crop_for_type(shot_type: str) -> str:
     if shot_type == "medium":
         return "medium"
     return "none"
+
+
+def _adjust_crop_for_content(crop: str, shot_type: str, content: str) -> str:
+    if shot_type == "close-up" and any(key in content for key in ("半张脸", "前景左侧", "前景是女生")):
+        return "none"
+    return crop
 
 
 def _shorten_subtitle(text: str, max_chars: int = 15) -> str:

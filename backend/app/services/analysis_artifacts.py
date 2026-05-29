@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 
 from PIL import Image, ImageDraw
 
 from ..models.video_structure import VideoStructure
+from .frame_sampler import choose_frame_times, extract_frames, write_frame_manifest
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -25,7 +25,10 @@ def save_analysis_artifacts(
     frames_dir = out_dir / "frames"
     frames_dir.mkdir(parents=True, exist_ok=True)
 
-    _extract_review_frames(video_path, frames_dir, structure.meta.duration)
+    shot_ranges = [(shot.start_time, shot.end_time) for shot in structure.shots]
+    frame_times = choose_frame_times(structure.meta.duration, shot_ranges)
+    frames = extract_frames(video_path, frames_dir, frame_times)
+    write_frame_manifest(frames, out_dir / "frames_manifest.json")
     _make_contact_sheet(frames_dir, out_dir / "contact_sheet.jpg")
 
     (out_dir / "meta.json").write_text(
@@ -56,34 +59,6 @@ def save_analysis_artifacts(
         encoding="utf-8",
     )
     return out_dir
-
-
-def _extract_review_frames(video_path: str, frames_dir: Path, duration: float) -> None:
-    if duration <= 20:
-        times = [float(i) for i in range(0, int(duration) + 1)]
-    else:
-        step = 2.0 if duration <= 70 else max(3.0, duration / 30)
-        times = []
-        t = 0.0
-        while t <= duration:
-            times.append(round(t, 2))
-            t += step
-
-    for ts in times:
-        label = str(ts).replace(".", "_")
-        subprocess.run(
-            [
-                "ffmpeg", "-y",
-                "-ss", str(ts), "-i", video_path,
-                "-frames:v", "1",
-                "-vf", "scale=360:-1",
-                "-q:v", "2",
-                str(frames_dir / f"{label}s.jpg"),
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
 
 
 def _make_contact_sheet(frames_dir: Path, output_path: Path) -> None:

@@ -22,6 +22,7 @@ async def run_transfer(
     source_video_path: str,
     target_video_path: str,
     target_description: str | None = None,
+    use_frame_audit: bool = False,
 ):
     """执行结构迁移
 
@@ -37,10 +38,10 @@ async def run_transfer(
 
     try:
         # 1. 分析样例视频
-        source = await analyze_video_structure(source_video_path)
+        source = await analyze_video_structure(source_video_path, use_frame_audit=use_frame_audit)
 
         # 2. 分析目标视频
-        target = await analyze_video_structure(target_video_path)
+        target = await analyze_video_structure(target_video_path, use_frame_audit=use_frame_audit)
 
         # 3. 构建目标描述
         if not target_description:

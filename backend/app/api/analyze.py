@@ -40,7 +40,7 @@ async def upload_video(file: UploadFile = File(...)):
 
 
 @router.post("/structure")
-async def analyze_structure(request: AnalyzeRequest):
+async def analyze_structure(request: AnalyzeRequest, use_frame_audit: bool = False):
     """分析视频结构
 
     Args:
@@ -51,7 +51,7 @@ async def analyze_structure(request: AnalyzeRequest):
         raise HTTPException(status_code=404, detail="视频文件不存在")
 
     try:
-        structure = await analyze_video_structure(video_path)
+        structure = await analyze_video_structure(video_path, use_frame_audit=use_frame_audit)
         return JSONResponse({
             "status": "success",
             "structure": structure.model_dump(),

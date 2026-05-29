@@ -207,7 +207,7 @@ def _mix_bgm(
     source_video_path: str,
     output_path: str,
     tmp_dir: str,
-    bgm_volume: float = 1.0,
+    bgm_volume: float = 0.85,
     keep_original_audio: bool = False,
 ):
     """从样例视频提取 BGM 应用到迁移视频
@@ -244,7 +244,7 @@ def _mix_bgm(
             f"[0:a]volume=0.18[orig];"
             f"[1:a]volume={bgm_volume}[bgm];"
             "[orig][bgm]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,"
-            "alimiter=limit=0.95[outa]"
+            "alimiter=limit=0.90[outa]"
         )
         cmd = [
             "ffmpeg", "-y",
@@ -265,7 +265,7 @@ def _mix_bgm(
             "-stream_loop", "-1", "-i", bgm_raw,
             "-t", str(duration),
             "-map", "0:v", "-map", "1:a:0",
-            "-filter:a", f"volume={bgm_volume},alimiter=limit=0.95",
+            "-filter:a", f"volume={bgm_volume},alimiter=limit=0.90",
             "-c:v", "copy",
             "-c:a", "aac", "-b:a", "160k", "-ar", "44100",
             "-shortest",

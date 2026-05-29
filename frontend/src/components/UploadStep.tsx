@@ -78,13 +78,29 @@ function FileInput({ file, onChange, placeholder }: {
   onChange: (f: File | null) => void
   placeholder: string
 }) {
+  const isVideoFile = (candidate: File) => {
+    const videoExt = /\.(mp4|mov|m4v|webm|avi|mkv)$/i
+    return candidate.type.startsWith('video/') || videoExt.test(candidate.name)
+  }
+
+  const handleFile = (candidate: File | undefined) => {
+    onChange(candidate && isVideoFile(candidate) ? candidate : null)
+  }
+
   return (
-    <label className={`block border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${file ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-blue-400'}`}>
+    <label
+      className={`block border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${file ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-blue-400'}`}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault()
+        handleFile(e.dataTransfer.files?.[0])
+      }}
+    >
       <input
         type="file"
         accept="video/*"
         className="hidden"
-        onChange={(e) => onChange(e.target.files?.[0] || null)}
+        onChange={(e) => handleFile(e.target.files?.[0])}
       />
       <div className="text-4xl mb-2">{file ? '✅' : '🎬'}</div>
       <p className="text-sm text-gray-500">{file ? file.name : placeholder}</p>
