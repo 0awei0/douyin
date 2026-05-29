@@ -9,6 +9,72 @@
 - 最终时间线：`backend/outputs/transfer/final_transfer.json`
 - 最终成片：`backend/outputs/transfer/final_transfer.mp4`
 
+## 快速开始
+
+1. 克隆项目并进入目录：
+
+```bash
+git clone https://github.com/0awei0/douyin.git
+cd douyin
+```
+
+2. 配置后端环境变量：
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+然后填写 `backend/.env` 里的 `ARK_API_KEY`。不要把真实 `.env` 提交到 Git。
+
+3. 准备 Python 后端依赖：
+
+```bash
+conda create -n agent python=3.11 -y
+conda run -n agent pip install -r backend/requirements.txt
+```
+
+如果你本地已经有 `agent` 环境，直接执行第二行即可。
+
+4. 确认系统有 FFmpeg：
+
+```bash
+ffmpeg -version
+ffprobe -version
+```
+
+如果没有，macOS 可以用 `brew install ffmpeg`。
+
+5. 启动后端：
+
+```bash
+cd backend
+conda run -n agent uvicorn app.main:app --reload --port 8000
+```
+
+健康检查地址：`http://localhost:8000/health`
+
+6. 启动前端：
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+打开 Vite 输出的本地地址，一般是 `http://localhost:3000`。页面会通过 Vite proxy 调用 `http://localhost:8000/api`。
+
+## 本地素材
+
+视频素材和生成结果默认不提交到 Git，组员需要把共享素材放到约定目录：
+
+```text
+videos/1.mp4                 # 爆款样例
+transfer-videos/1.mp4        # 目标素材
+backend/outputs/transfer/    # 生成的 timeline json 和 mp4
+```
+
+前端上传视频会保存到 `backend/uploads/`，分析证据包会保存到 `backend/outputs/analysis_runs/`。
+
 ## 比赛要求对齐
 
 本项目对齐 `doc/` 中的比赛要求，优先完成 P0 闭环：
@@ -69,24 +135,30 @@ backend/outputs/analysis_runs/<task_id>/
 
 其中包含抽帧、`contact_sheet.jpg`、`raw_doubao_result.json`、`normalized_structure.json`、`spatial_summary.md` 和 `meta.json`。
 
-## 本地运行
+## 常用命令
 
-后端使用 conda `agent` 环境：
+后端服务：
 
 ```bash
 cd backend
 conda run -n agent uvicorn app.main:app --reload --port 8000
 ```
 
-前端：
+前端服务：
 
 ```bash
 cd frontend
-npm install
 npm run dev
 ```
 
-打开 Vite 输出的本地地址后，上传样例视频和目标视频即可运行完整 pipeline。
+一键 pipeline API：
+
+```bash
+curl -X POST http://localhost:8000/api/pipeline/run \
+  -F "source_video=@videos/1.mp4" \
+  -F "target_video=@transfer-videos/1.mp4" \
+  -F "target_description=三姐妹操场手势舞，迁移近到远空间结构"
+```
 
 ## 生成当前 case
 
