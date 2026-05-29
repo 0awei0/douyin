@@ -12,8 +12,8 @@ load_dotenv(_env_path)
 class Settings:
     def __init__(self):
         self.ARK_API_KEY = os.environ.get("ARK_API_KEY", "")
-        self.ARK_ENDPOINT = os.environ.get("ARK_ENDPOINT", "ep-20260508213828-7ntjl")
-        self.ARK_MODEL = os.environ.get("ARK_MODEL", "doubao-seed-2.0-lite")
+        self.ARK_BASE_URL = os.environ.get("ARK_BASE_URL", "https://ark.cn-beijing.volces.com/api/v3")
+        self.ARK_MODEL = os.environ.get("ARK_MODEL", "doubao-seed-2-0-pro-260215")
         self.UPLOAD_DIR = "uploads"
         self.OUTPUT_DIR = "outputs"
 

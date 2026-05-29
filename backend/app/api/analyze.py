@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 
-from ..models.video_structure import AnalyzeResponse
+from ..models.video_structure import AnalyzeRequest
 from ..services.video_analyzer import analyze_video_structure
 
 router = APIRouter(prefix="/api/analyze", tags=["analyze"])
@@ -40,12 +40,13 @@ async def upload_video(file: UploadFile = File(...)):
 
 
 @router.post("/structure")
-async def analyze_structure(video_path: str):
+async def analyze_structure(request: AnalyzeRequest):
     """分析视频结构
 
     Args:
-        video_path: 服务器上的视频文件路径
+        request: 包含服务器上的视频文件路径
     """
+    video_path = request.video_path
     if not os.path.exists(video_path):
         raise HTTPException(status_code=404, detail="视频文件不存在")
 

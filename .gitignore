@@ -13,6 +13,7 @@ __pycache__/
 # Node
 node_modules/
 .vite/
+dist/
 
 # IDE
 .vscode/
@@ -25,6 +26,7 @@ node_modules/
 backend/uploads/
 backend/data.db*
 videos/
+transfer-videos/
 
 # Allow analysis JSON results, ignore other outputs
 backend/outputs/*

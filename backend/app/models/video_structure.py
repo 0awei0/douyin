@@ -22,6 +22,9 @@ class Shot(BaseModel):
     camera_move: str = "静止"
     has_subtitle: bool = False
     visual_effect: str = "无"
+    subject_distance: str = ""  # near / mid / far / out / none
+    subject_position: str = ""  # 画面位置，如前景居中/右下远处/离开画面
+    subject_motion: str = ""  # 主体相对镜头运动，如靠近/远离/横移/静止
 
 
 # ── BGM ──
@@ -99,6 +102,9 @@ class TransferableFeatures(BaseModel):
     hook_strategy: str = ""
     narrative_pattern: str = ""
     pacing_pattern: str = ""
+    spatial_pattern: str = ""  # 可迁移的空间调度，如近前景→中远景→环境空镜
+    subject_trajectory: str = ""  # 主体距离/位置轨迹
+    composition_pattern: str = ""  # 构图变化模式
     engagement_techniques: list[str] = []
     suitable_categories: list[str] = []
 

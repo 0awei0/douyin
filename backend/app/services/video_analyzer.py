@@ -19,6 +19,7 @@ from ..models.video_structure import (
     CoverStyle, TransferableFeatures,
 )
 from .doubao_client import analyze_video_with_doubao
+from .analysis_artifacts import save_analysis_artifacts
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -55,7 +56,13 @@ async def analyze_video_structure(video_path: str) -> VideoStructure:
     doubao_result = await analyze_video_with_doubao(video_path, meta)
 
     print(f"[{task_id}] 整合分析结果...")
-    return build_video_structure(task_id, meta, doubao_result)
+    structure = build_video_structure(task_id, meta, doubao_result)
+
+    print(f"[{task_id}] 保存分析中间文件...")
+    sample_fps = safe_float(doubao_result.get("_analysis_sample_fps"), 0.0)
+    save_analysis_artifacts(task_id, video_path, structure, doubao_result, sample_fps)
+
+    return structure
 
 
 # ── 工具函数 ──
@@ -100,6 +107,9 @@ def build_video_structure(task_id: str, meta: VideoMeta, r: dict) -> VideoStruct
             camera_move=s(sh.get("camera_move", "静止")),
             has_subtitle=bool(sh.get("has_subtitle", False)),
             visual_effect=s(sh.get("visual_effect", "无")),
+            subject_distance=s(sh.get("subject_distance", "")),
+            subject_position=s(sh.get("subject_position", "")),
+            subject_motion=s(sh.get("subject_motion", "")),
         )
         for sh in r.get("shots", [])
         if isinstance(sh, dict)
@@ -139,6 +149,9 @@ def build_video_structure(task_id: str, meta: VideoMeta, r: dict) -> VideoStruct
         hook_strategy=s(rt.get("hook_strategy", "")),
         narrative_pattern=s(rt.get("narrative_pattern", "")),
         pacing_pattern=s(rt.get("pacing_pattern", "")),
+        spatial_pattern=s(rt.get("spatial_pattern", "")),
+        subject_trajectory=s(rt.get("subject_trajectory", "")),
+        composition_pattern=s(rt.get("composition_pattern", "")),
         engagement_techniques=sl(rt.get("engagement_techniques", [])),
         suitable_categories=sl(rt.get("suitable_categories", [])),
     )
