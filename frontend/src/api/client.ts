@@ -51,6 +51,16 @@ export interface PipelineResponse {
   }
 }
 
+export interface PipelineProgressEvent {
+  type: 'progress' | 'result' | 'error'
+  step: string
+  status: 'running' | 'done' | 'error'
+  title: string
+  message: string
+  detail?: Record<string, unknown>
+  result?: PipelineResponse
+}
+
 export interface VideoMeta {
   duration: number
   resolution: string
@@ -232,4 +242,59 @@ export async function runPipeline(
   })
   if (!res.ok) throw await readError(res, '流水线失败')
   return res.json()
+}
+
+export async function runPipelineStream(
+  sourceVideo: File,
+  targetVideo: File,
+  targetDescription: string | undefined,
+  onEvent: (event: PipelineProgressEvent) => void,
+): Promise<PipelineResponse> {
+  const formData = new FormData()
+  formData.append('source_video', sourceVideo)
+  formData.append('target_video', targetVideo)
+  if (targetDescription) formData.append('target_description', targetDescription)
+  formData.append('use_frame_audit', 'false')
+
+  const res = await fetch(`${BASE_URL}/pipeline/run/stream`, {
+    method: 'POST',
+    body: formData,
+  })
+  if (!res.ok) throw await readError(res, '流水线失败')
+  if (!res.body) throw new Error('当前浏览器不支持流式响应')
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let finalResult: PipelineResponse | null = null
+
+  const handleLine = (line: string) => {
+    const trimmed = line.trim()
+    if (!trimmed) return
+    const event = JSON.parse(trimmed) as PipelineProgressEvent
+    onEvent(event)
+    if (event.type === 'error') {
+      throw new Error(event.message || '流水线执行失败')
+    }
+    if (event.type === 'result' && event.result) {
+      finalResult = event.result
+    }
+  }
+
+  while (true) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() ?? ''
+    for (const line of lines) {
+      handleLine(line)
+    }
+  }
+
+  buffer += decoder.decode()
+  handleLine(buffer)
+
+  if (!finalResult) throw new Error('流水线没有返回最终结果')
+  return finalResult
 }

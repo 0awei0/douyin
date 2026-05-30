@@ -93,29 +93,32 @@ curl -sS -i \
 
 期望看到 `HTTP/1.1 200 OK`，响应里包含 `file_id`、`path`、`size`。
 
-### 3. 验证完整 pipeline
+### 3. 验证流式完整 pipeline
 
-这个命令会调用 Doubao 视频理解并生成 mp4，通常需要 1-3 分钟。
+这个命令会调用 Doubao 视频理解并生成 mp4，通常需要 1-3 分钟。终端会持续输出 JSON 行，前端也基于同一个流展示实时进度。
 
 ```bash
-curl -sS -w '\nHTTP_STATUS:%{http_code}\n' \
-  -o /tmp/douyin_pipeline_response.json \
+curl -sS -N \
   -F 'source_video=@videos/1.mp4;type=video/mp4' \
   -F 'target_video=@transfer-videos/1.mp4;type=video/mp4' \
   -F 'target_description=三姐妹操场手势舞，迁移近到远空间结构' \
   -F 'use_frame_audit=false' \
-  http://127.0.0.1:3000/api/pipeline/run
+  http://127.0.0.1:3000/api/pipeline/run/stream | tee /tmp/douyin_pipeline_stream.ndjson
 ```
 
-期望最后输出：
+期望先看到类似这样的进度行：
 
 ```text
-HTTP_STATUS:200
+{"type":"progress","step":"upload","status":"running",...}
+{"type":"progress","step":"source_analysis","status":"running",...}
 ```
 
 查看结果摘要：
 
 ```bash
+jq -s 'map(select(.type == "result"))[-1].result' \
+  /tmp/douyin_pipeline_stream.ndjson > /tmp/douyin_pipeline_response.json
+
 jq '{status, run_id, source_meta, target_meta, video, timeline_metrics: .transfer.timeline_metrics}' \
   /tmp/douyin_pipeline_response.json
 ```
