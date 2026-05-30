@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from ..models.video_structure import VideoStructure
 from ..services.video_analyzer import analyze_video_structure
@@ -23,6 +23,7 @@ router = APIRouter(prefix="/api/pipeline", tags=["pipeline"])
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 OUTPUT_DIR = BASE_DIR / "outputs"
+VIDEO_OUTPUT_DIR = OUTPUT_DIR / "videos"
 
 
 @router.post("/run")
@@ -184,9 +185,9 @@ async def _execute_pipeline(
         ),
     )
 
-    video_dir = OUTPUT_DIR / "videos"
-    os.makedirs(video_dir, exist_ok=True)
-    video_path = str(video_dir / f"video_{run_id}.mp4")
+    os.makedirs(VIDEO_OUTPUT_DIR, exist_ok=True)
+    video_filename = f"video_{run_id}.mp4"
+    video_path = str(VIDEO_OUTPUT_DIR / video_filename)
 
     await _emit(on_event, _progress("render", "running", "正在生成视频", "FFmpeg 正在裁切、变速、叠字幕和混入样例 BGM。"))
     await asyncio.to_thread(
@@ -205,7 +206,11 @@ async def _execute_pipeline(
             "done",
             "视频生成完成",
             "成片已写入本地输出目录。",
-            {"video_path": video_path, "size_mb": round(size_mb, 2)},
+            {
+                "video_path": video_path,
+                "video_url": _video_url(video_filename),
+                "size_mb": round(size_mb, 2),
+            },
         ),
     )
 
@@ -224,9 +229,24 @@ async def _execute_pipeline(
         "transfer": transfer_result,
         "video": {
             "path": video_path,
+            "url": _video_url(video_filename),
+            "filename": video_filename,
             "size_mb": round(size_mb, 2),
         },
     }
+
+
+@router.get("/videos/{filename}")
+async def get_pipeline_video(filename: str):
+    """Serve generated videos for browser preview and download."""
+    if Path(filename).name != filename or not filename.endswith(".mp4"):
+        raise HTTPException(status_code=400, detail="非法视频文件名")
+
+    video_path = VIDEO_OUTPUT_DIR / filename
+    if not video_path.exists() or not video_path.is_file():
+        raise HTTPException(status_code=404, detail="视频文件不存在")
+
+    return FileResponse(video_path, media_type="video/mp4")
 
 
 async def _save_uploads(source_video: UploadFile, target_video: UploadFile) -> tuple[str, Path, Path]:
@@ -358,3 +378,7 @@ async def _emit(on_event: Callable[[dict[str, Any]], Any] | None, event: dict[st
 
 def _file_size_mb(path: Path) -> float:
     return round(path.stat().st_size / 1024 / 1024, 2)
+
+
+def _video_url(filename: str) -> str:
+    return f"/api/pipeline/videos/{filename}"

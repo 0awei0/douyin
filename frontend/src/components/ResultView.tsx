@@ -7,6 +7,8 @@ interface Props {
 
 export default function ResultView({ result, onBack }: Props) {
   const { transfer, video, source_meta, target_meta } = result
+  const videoUrl = video.url || videoUrlFromPath(video.path)
+  const videoFilename = video.filename || filenameFromPath(video.path) || 'transfer-video.mp4'
   const script = transfer.script ?? []
   const storyboard = transfer.storyboard ?? []
   const packaging = transfer.packaging ?? { subtitle_style: '未返回', transitions: '未返回', cover: '未返回' }
@@ -24,13 +26,41 @@ export default function ResultView({ result, onBack }: Props) {
       {/* 成功提示 */}
       <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
         <span className="text-2xl">✅</span>
-        <div>
+        <div className="min-w-0">
           <p className="font-semibold text-green-800">迁移完成！</p>
-          <p className="text-sm text-green-600">
+          <p className="text-sm text-green-600 break-words">
             视频已生成: {video.path} ({video.size_mb} MB)
           </p>
         </div>
       </div>
+
+      {videoUrl && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+            <div>
+              <h3 className="text-lg font-semibold">视频预览</h3>
+              <p className="text-sm text-gray-500 mt-1">{videoFilename} · {video.size_mb} MB</p>
+            </div>
+            <a
+              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+              href={videoUrl}
+              download={videoFilename}
+            >
+              下载视频
+            </a>
+          </div>
+          <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-lg bg-black shadow">
+            <video
+              className="block w-full aspect-[9/16] bg-black"
+              src={videoUrl}
+              controls
+              playsInline
+              preload="metadata"
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-3 break-words">预览地址: {videoUrl}</p>
+        </div>
+      )}
 
       {/* 元信息 */}
       <div className="grid grid-cols-2 gap-4">
@@ -196,4 +226,13 @@ function Metric({ label, value }: { label: string; value: string | number }) {
       <p className="text-sm font-semibold text-gray-800 break-words">{value}</p>
     </div>
   )
+}
+
+function videoUrlFromPath(path: string) {
+  const filename = filenameFromPath(path)
+  return filename ? `/api/pipeline/videos/${encodeURIComponent(filename)}` : ''
+}
+
+function filenameFromPath(path: string) {
+  return path.split(/[\\/]/).filter(Boolean).pop() || ''
 }

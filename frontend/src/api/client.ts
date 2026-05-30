@@ -47,6 +47,8 @@ export interface PipelineResponse {
   transfer: TransferResult
   video: {
     path: string
+    url?: string
+    filename?: string
     size_mb: number
   }
 }
