@@ -577,13 +577,8 @@ def _enforce_near_to_far_target_windows(
 
 
 def _should_replace_far_walk(shot: dict[str, Any]) -> bool:
-    start, end = parse_source_range(str(shot.get("source", "")))
     text = f"{shot.get('content', '')} {shot.get('source', '')}"
-    if start is not None and end is not None and start < 24 <= end:
-        return True
-    if start is not None and 16 <= start < 24:
-        return True
-    return _is_transition_walk({"content": text})
+    return _is_transition_walk({"content": text}) and not _has_stable_far_pose(text)
 
 
 def _best_spatial_window(
@@ -592,13 +587,16 @@ def _best_spatial_window(
     duration: float,
 ) -> tuple[float, float, str] | None:
     scored: list[tuple[float, float, float, str]] = []
+    target_duration = max(float(target_structure.meta.duration), 1.0)
     for shot in target_structure.shots:
         if shot.type == "text-overlay":
             continue
         start = float(shot.start_time)
-        end = min(float(shot.end_time), target_structure.meta.duration)
+        end = min(float(shot.end_time), target_duration)
         if end <= start:
             continue
+        progress = start / target_duration
+        end_progress = end / target_duration
         content = shot.content
         text = f"{shot.type} {shot.subject_distance} {shot.subject_position} {shot.subject_motion} {content}"
         score = 0.0
@@ -614,13 +612,13 @@ def _best_spatial_window(
                 score += 2.0
             if any(k in text for k in ("停下", "站定", "调整站位", "商量拍摄位置")):
                 score += 5.0
-            if start >= 24:
+            if progress >= 0.35:
                 score += 3.0
-            if start >= 28:
+            if progress >= 0.45:
                 score += 1.0
-            if start >= 40:
+            if progress >= 0.65:
                 score -= 5.0
-            if 16 <= start < 24 or any(k in text for k in ("奔跑", "往跑道远处跑", "往更远处跑", "跑到")):
+            if _is_running_text(text) and not _has_stable_far_pose(text):
                 score -= 8.0
         else:
             if shot.subject_distance in {"tiny", "none"}:
@@ -629,11 +627,11 @@ def _best_spatial_window(
                 score += 2.0
             if any(k in text for k in ("开阔", "全景", "天空", "云层", "环境", "操场")):
                 score += 3.0
-            if start >= 40:
+            if progress >= 0.6:
                 score += 4.0
-            if end >= target_structure.meta.duration - 6:
+            if end_progress >= 0.85:
                 score += 2.0
-            if any(k in text for k in ("奔跑", "往更远处跑")):
+            if _is_running_text(text) and not _has_stable_far_pose(text):
                 score -= 2.0
 
         if score <= 0:
@@ -650,10 +648,18 @@ def _best_spatial_window(
         source_end = end
     else:
         source_span = min(end - start, max(duration * 1.8, 6.0))
-        preferred = 48.0 if end >= 56.0 else end - source_span
+        preferred = target_structure.meta.duration * 0.8 if end / target_structure.meta.duration >= 0.85 else end - source_span
         source_start = _clamp(preferred, start, max(start, end - source_span))
         source_end = min(end, source_start + source_span)
     return round(source_start, 1), round(source_end, 1), content
+
+
+def _is_running_text(text: str) -> bool:
+    return any(k in text for k in ("奔跑", "往跑道远处跑", "往更远处跑", "跑到", "跑向", "转身背对"))
+
+
+def _has_stable_far_pose(text: str) -> bool:
+    return any(k in text for k in ("停下", "站定", "调整站位", "商量拍摄位置", "远处站", "保持队形"))
 
 
 def _apply_spatial_window(
