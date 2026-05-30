@@ -39,6 +39,7 @@ def optimize_transfer_result(
         cta_added = True
 
     _apply_source_spatial_pattern(storyboard, source_structure, target_structure)
+    _enforce_near_to_far_target_windows(storyboard, target_structure)
     _drop_redundant_walk_far_shots(storyboard)
     _drop_overlapping_far_shots(storyboard)
 
@@ -552,6 +553,129 @@ def _prefer_far_action_over_walk(
             edit["speed"] = round(_clamp((source_end - start) / duration, 0.5, 2.4), 3)
             shot["edit"] = edit
             used += 1
+
+
+def _enforce_near_to_far_target_windows(
+    storyboard: list[dict[str, Any]],
+    target_structure: VideoStructure | None,
+) -> None:
+    """Keep the transfer focused on scale/position, not running as an action."""
+    if not target_structure:
+        return
+
+    for shot in storyboard:
+        role = shot.get("edit", {}).get("spatial_role") if isinstance(shot.get("edit"), dict) else ""
+        duration = _safe_float(shot.get("duration"), 3.0)
+        if role == "far" and _should_replace_far_walk(shot):
+            replacement = _best_spatial_window(target_structure, "far", duration)
+            if replacement:
+                _apply_spatial_window(shot, replacement, duration, "far")
+        elif role == "empty":
+            replacement = _best_spatial_window(target_structure, "empty", duration)
+            if replacement:
+                _apply_spatial_window(shot, replacement, duration, "empty")
+
+
+def _should_replace_far_walk(shot: dict[str, Any]) -> bool:
+    start, end = parse_source_range(str(shot.get("source", "")))
+    text = f"{shot.get('content', '')} {shot.get('source', '')}"
+    if start is not None and end is not None and start < 24 <= end:
+        return True
+    if start is not None and 16 <= start < 24:
+        return True
+    return _is_transition_walk({"content": text})
+
+
+def _best_spatial_window(
+    target_structure: VideoStructure,
+    role: str,
+    duration: float,
+) -> tuple[float, float, str] | None:
+    scored: list[tuple[float, float, float, str]] = []
+    for shot in target_structure.shots:
+        if shot.type == "text-overlay":
+            continue
+        start = float(shot.start_time)
+        end = min(float(shot.end_time), target_structure.meta.duration)
+        if end <= start:
+            continue
+        content = shot.content
+        text = f"{shot.type} {shot.subject_distance} {shot.subject_position} {shot.subject_motion} {content}"
+        score = 0.0
+
+        if role == "far":
+            if shot.subject_distance == "far":
+                score += 5.0
+            elif shot.subject_distance == "tiny":
+                score += 2.0
+            if shot.type == "wide":
+                score += 2.0
+            if any(k in text for k in ("远处", "身影", "占比", "小", "全景")):
+                score += 2.0
+            if any(k in text for k in ("停下", "站定", "调整站位", "商量拍摄位置")):
+                score += 5.0
+            if start >= 24:
+                score += 3.0
+            if start >= 28:
+                score += 1.0
+            if start >= 40:
+                score -= 5.0
+            if 16 <= start < 24 or any(k in text for k in ("奔跑", "往跑道远处跑", "往更远处跑", "跑到")):
+                score -= 8.0
+        else:
+            if shot.subject_distance in {"tiny", "none"}:
+                score += 5.0
+            if shot.type == "wide":
+                score += 2.0
+            if any(k in text for k in ("开阔", "全景", "天空", "云层", "环境", "操场")):
+                score += 3.0
+            if start >= 40:
+                score += 4.0
+            if end >= target_structure.meta.duration - 6:
+                score += 2.0
+            if any(k in text for k in ("奔跑", "往更远处跑")):
+                score -= 2.0
+
+        if score <= 0:
+            continue
+        scored.append((score, start, end, content))
+
+    if not scored:
+        return None
+
+    _, start, end, content = max(scored, key=lambda item: item[0])
+    if role == "far":
+        source_span = min(end - start, max(duration * 1.7, 4.0))
+        source_start = max(start, end - source_span)
+        source_end = end
+    else:
+        source_span = min(end - start, max(duration * 1.8, 6.0))
+        preferred = 48.0 if end >= 56.0 else end - source_span
+        source_start = _clamp(preferred, start, max(start, end - source_span))
+        source_end = min(end, source_start + source_span)
+    return round(source_start, 1), round(source_end, 1), content
+
+
+def _apply_spatial_window(
+    shot: dict[str, Any],
+    window: tuple[float, float, str],
+    duration: float,
+    role: str,
+) -> None:
+    start, end, content = window
+    shot["source"] = f"目标视频 {start:.1f}-{end:.1f}s"
+    if role == "far":
+        shot["content"] = f"远景主体已经变小，人物停在跑道远处调整队形，延续近到远的位置变化。{_deemphasize_walking(content)}"
+        shot["subtitle"] = "操场版来了"
+    else:
+        shot["content"] = f"开阔操场全景接住节奏，人物成为远处很小的环境元素，释放空间感。{_deemphasize_walking(content)}"
+        shot["subtitle"] = "越来越有感觉"
+
+    edit = shot.get("edit") if isinstance(shot.get("edit"), dict) else {}
+    edit["speed"] = round(_clamp((end - start) / max(duration, 0.3), 0.5, 2.4), 3)
+    edit["crop"] = "none"
+    edit["pace"] = "hold"
+    shot["edit"] = edit
 
 
 def _drop_redundant_walk_far_shots(storyboard: list[dict[str, Any]]) -> None:
