@@ -256,7 +256,7 @@ export async function runPipelineStream(
   formData.append('source_video', sourceVideo)
   formData.append('target_video', targetVideo)
   if (targetDescription) formData.append('target_description', targetDescription)
-  formData.append('use_frame_audit', 'false')
+  formData.append('use_frame_audit', 'true')
 
   const res = await fetch(`${BASE_URL}/pipeline/run/stream`, {
     method: 'POST',

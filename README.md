@@ -15,8 +15,8 @@
 cp backend/.env.example backend/.env
 # 填写 backend/.env 里的 ARK_API_KEY
 
-conda create -n agent python=3.11 -y
-conda run -n agent pip install -r backend/requirements.txt
+conda create -n cv python=3.11 -y
+conda run -n cv pip install -r backend/requirements.txt
 
 cd frontend
 npm install
@@ -43,7 +43,7 @@ brew install ffmpeg
 
 ```bash
 cd backend
-conda run -n agent uvicorn app.main:app --reload --host 127.0.0.1 --port 8010
+conda run -n cv uvicorn app.main:app --reload --host 127.0.0.1 --port 8010
 ```
 
 终端 2：启动前端。
@@ -102,7 +102,7 @@ curl -sS -N \
   -F 'source_video=@videos/1.mp4;type=video/mp4' \
   -F 'target_video=@transfer-videos/1.mp4;type=video/mp4' \
   -F 'target_description=三姐妹操场手势舞，迁移近到远空间结构' \
-  -F 'use_frame_audit=false' \
+  -F 'use_frame_audit=true' \
   http://127.0.0.1:3000/api/pipeline/run/stream | tee /tmp/douyin_pipeline_stream.ndjson
 ```
 
@@ -137,7 +137,7 @@ ffprobe -v error \
 ## 构建检查
 
 ```bash
-conda run -n agent python -m compileall backend/app/services backend/app/models backend/app/api
+conda run -n cv python -m compileall backend/app/services backend/app/models backend/app/api
 
 cd frontend
 npm run build
@@ -152,9 +152,43 @@ backend/outputs/transfer/         # 迁移时间线 JSON
 backend/outputs/videos/           # pipeline 生成的视频
 ```
 
-## 可选：自抽帧空间审计
+## Hybrid 迁移方案
 
-默认关闭。需要二阶段空间审计时可以在后端环境变量里打开：
+当前推荐默认使用 hybrid 流程，适合迁移到其他源视频和目标素材：
+
+```text
+Doubao 直接视频理解
+  -> 本地 CV 算法预选关键帧
+  -> 多关键帧按时间顺序一起送入 Doubao 做空间审计
+  -> transfer optimizer 按 near/mid/far/tiny/environment/cta 纠偏
+  -> FFmpeg 渲染成片
+```
+
+这套流程没有依赖固定绝对时间点。它会先分析源视频的可迁移结构，再在目标素材里寻找可承接的空间角色：
+
+```text
+near -> mid/action -> far/smaller subject -> tiny/environment release -> cta
+```
+
+本地 CV 关键帧选择会综合：
+
+- 镜头边界和时间覆盖；
+- 画面差异与运动峰值；
+- 视觉多样性；
+- OpenCV 探针帧中的运动面积、边缘密度和人物检测候选。
+
+Doubao 空间审计不是逐帧单独调用，而是把这些关键帧按时间顺序放进同一个多图请求，并附上每张图的时间戳。这样模型能比较前后帧，判断主体占比、位置和空间角色变化。
+
+`transfer_optimizer` 会进一步避免常见误映射：
+
+- `near` 不应被中景动作段替代；
+- `mid` 优先选择开头附近的清晰手势/动作段；
+- `far` 不应落到过晚的 tiny/environment 段；
+- 跑步/走路只作为“主体远离”的空间线索，不作为核心 viral 动作。
+
+## 算法关键帧 + 自抽帧空间审计
+
+需要二阶段空间审计时可以在后端环境变量里打开：
 
 ```bash
 ENABLE_FRAME_SPATIAL_AUDIT=true
@@ -166,8 +200,22 @@ ENABLE_FRAME_SPATIAL_AUDIT=true
 use_frame_audit=true
 ```
 
+开启后，后端会先用本地 CV 算法预选关键帧候选，再把关键帧序列交给 Doubao 做空间轨迹审计。关键帧证据会保存到：
+
+```text
+backend/outputs/analysis_runs/<task_id>/algorithmic_keyframes/
+```
+
+当前 case 的最新对比产物：
+
+```text
+backend/outputs/strategy_compare/video_strategy_hybrid_cv_opening_gesture.mp4
+backend/outputs/strategy_compare/transfer_strategy_hybrid_cv_opening_gesture.json
+backend/outputs/strategy_compare/contact_hybrid_cv_opening_gesture.jpg
+```
+
 ## 安全边界
 
 - 不要提交真实 `backend/.env`、视频素材、上传文件或生成产物。
 - `ARK_API_KEY` 只从环境变量或 `backend/.env` 读取。
-- 主要后端命令使用 conda `agent` 环境运行。
+- 主要后端命令使用 conda `cv` 环境运行。

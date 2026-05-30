@@ -566,7 +566,15 @@ def _enforce_near_to_far_target_windows(
     for shot in storyboard:
         role = shot.get("edit", {}).get("spatial_role") if isinstance(shot.get("edit"), dict) else ""
         duration = _safe_float(shot.get("duration"), 3.0)
-        if role == "far" and _should_replace_far_walk(shot):
+        if role == "near" and _should_replace_near(shot):
+            replacement = _best_spatial_window(target_structure, "near", duration)
+            if replacement:
+                _apply_spatial_window(shot, replacement, duration, "near")
+        elif role == "mid" and _should_replace_mid(shot):
+            replacement = _best_spatial_window(target_structure, "mid", duration)
+            if replacement:
+                _apply_spatial_window(shot, replacement, duration, "mid")
+        elif role == "far" and (_should_replace_far_walk(shot) or _far_is_too_late_for_transition(shot, target_structure)):
             replacement = _best_spatial_window(target_structure, "far", duration)
             if replacement:
                 _apply_spatial_window(shot, replacement, duration, "far")
@@ -579,6 +587,25 @@ def _enforce_near_to_far_target_windows(
 def _should_replace_far_walk(shot: dict[str, Any]) -> bool:
     text = f"{shot.get('content', '')} {shot.get('source', '')}"
     return _is_transition_walk({"content": text}) and not _has_stable_far_pose(text)
+
+
+def _far_is_too_late_for_transition(shot: dict[str, Any], target_structure: VideoStructure) -> bool:
+    start, _ = parse_source_range(str(shot.get("source", "")))
+    if start is None or target_structure.meta.duration <= 0:
+        return False
+    return start / target_structure.meta.duration >= 0.65
+
+
+def _should_replace_near(shot: dict[str, Any]) -> bool:
+    text = f"{shot.get('content', '')} {shot.get('source', '')}"
+    return not any(k in text for k in ("近景", "特写", "半张脸", "前景", "近处"))
+
+
+def _should_replace_mid(shot: dict[str, Any]) -> bool:
+    text = f"{shot.get('content', '')} {shot.get('source', '')}"
+    if _is_running_text(text) or any(k in text for k in ("转身背对", "往远处", "拉开", "远离镜头")):
+        return True
+    return not any(k in text for k in ("手势", "舞", "动作", "互动", "站在画面中心", "并排"))
 
 
 def _best_spatial_window(
@@ -601,7 +628,35 @@ def _best_spatial_window(
         text = f"{shot.type} {shot.subject_distance} {shot.subject_position} {shot.subject_motion} {content}"
         score = 0.0
 
-        if role == "far":
+        if role == "near":
+            if shot.subject_distance in {"near", "large"}:
+                score += 5.0
+            if shot.type == "close-up":
+                score += 3.0
+            if any(k in text for k in ("特写", "半张脸", "前景", "近景", "近处")):
+                score += 4.0
+            if progress <= 0.2:
+                score += 3.0
+            if _is_running_text(text):
+                score -= 8.0
+        elif role == "mid":
+            if shot.subject_distance in {"mid", "medium"}:
+                score += 4.0
+            if shot.type == "medium":
+                score += 3.0
+            if any(k in text for k in ("手势", "舞", "动作", "互动", "站定", "并排", "画面居中")):
+                score += 4.0
+            if any(k in text for k in ("手势舞", "手势", "舞蹈", "同步做")):
+                score += 3.0
+            if any(k in text for k in ("整理衣服", "整理头发", "准备开始")):
+                score -= 1.0
+            if progress <= 0.35:
+                score += 2.0
+            if 0.02 <= progress <= 0.09:
+                score += 6.0
+            if _is_running_text(text) or any(k in text for k in ("转身背对", "往远处", "拉开距离")):
+                score -= 8.0
+        elif role == "far":
             if shot.subject_distance == "far":
                 score += 5.0
             elif shot.subject_distance == "tiny":
@@ -642,7 +697,11 @@ def _best_spatial_window(
         return None
 
     _, start, end, content = max(scored, key=lambda item: item[0])
-    if role == "far":
+    if role in {"near", "mid"}:
+        source_span = min(end - start, max(duration * 1.8, duration + 1.0))
+        source_start = start
+        source_end = min(end, source_start + source_span)
+    elif role == "far":
         source_span = min(end - start, max(duration * 1.7, 4.0))
         source_start = max(start, end - source_span)
         source_end = end
@@ -670,7 +729,13 @@ def _apply_spatial_window(
 ) -> None:
     start, end, content = window
     shot["source"] = f"目标视频 {start:.1f}-{end:.1f}s"
-    if role == "far":
+    if role == "near":
+        shot["content"] = f"近景开场先抓住人物，保留画面前景的近距离关系。{content}"
+        shot["subtitle"] = "开拍开拍"
+    elif role == "mid":
+        shot["content"] = f"中景主体站定做手势舞动作，承接开场并保持动作清晰。{_deemphasize_walking(content)}"
+        shot["subtitle"] = "手势先跟上"
+    elif role == "far":
         shot["content"] = f"远景主体已经变小，人物停在跑道远处调整队形，延续近到远的位置变化。{_deemphasize_walking(content)}"
         shot["subtitle"] = "操场版来了"
     else:
@@ -679,8 +744,12 @@ def _apply_spatial_window(
 
     edit = shot.get("edit") if isinstance(shot.get("edit"), dict) else {}
     edit["speed"] = round(_clamp((end - start) / max(duration, 0.3), 0.5, 2.4), 3)
-    edit["crop"] = "none"
-    edit["pace"] = "hold"
+    if role in {"near", "mid"}:
+        edit["crop"] = _crop_for_type("close-up" if role == "near" else "medium")
+        edit["pace"] = "fast-cut" if duration <= 3.0 else "hold"
+    else:
+        edit["crop"] = "none"
+        edit["pace"] = "hold"
     shot["edit"] = edit
 
 

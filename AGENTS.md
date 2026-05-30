@@ -19,14 +19,17 @@ The current key case uses:
 
 ## Environment
 
-Use the conda `agent` environment for Python backend work.
+Use the conda `cv` environment for Python backend work. This environment includes
+the project backend dependencies plus CV packages used for algorithmic keyframe
+selection.
 
 ```bash
-conda run -n agent python ...
-conda run -n agent uvicorn app.main:app --reload --port 8000
+conda run -n cv python ...
+conda run -n cv uvicorn app.main:app --reload --port 8010
 ```
 
-Do not assume the base Python has the right dependencies. The Volcengine Ark SDK and project Python deps should be used from `agent`.
+Do not assume the base Python has the right dependencies. The Volcengine Ark SDK,
+project Python deps, and CV keyframe dependencies should be used from `cv`.
 
 ## Model Choice
 
@@ -119,7 +122,8 @@ For far-away people, explicitly preserve `tiny/far` observations. Do not collaps
 When optimizing the pipeline, prefer a two-stage analysis:
 
 1. General video structure analysis.
-2. Spatial-only audit focused on subject scale, position, and movement over time.
+2. Algorithmic keyframe selection followed by a spatial-only audit focused on
+   subject scale, position, and movement over time.
 
 The transfer stage should map spatial roles in order:
 
@@ -131,10 +135,10 @@ near -> mid -> far -> tiny/environment -> cta
 
 ```bash
 # Compile backend
-conda run -n agent python -m compileall backend/app/services backend/app/models backend/app/api
+conda run -n cv python -m compileall backend/app/services backend/app/models backend/app/api
 
 # Generate final video from current final timeline
-conda run -n agent python - <<'PY'
+conda run -n cv python - <<'PY'
 import sys
 sys.path.insert(0, 'backend')
 from app.services.video_generator import generate_transfer_video

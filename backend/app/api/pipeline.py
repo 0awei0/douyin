@@ -31,7 +31,7 @@ async def run_pipeline(
     source_video: UploadFile = File(...),
     target_video: UploadFile = File(...),
     target_description: str = Form(None),
-    use_frame_audit: bool = Form(False),
+    use_frame_audit: bool = Form(True),
 ):
     """一键执行完整流水线
 
@@ -54,7 +54,7 @@ async def run_pipeline_stream(
     source_video: UploadFile = File(...),
     target_video: UploadFile = File(...),
     target_description: str = Form(None),
-    use_frame_audit: bool = Form(False),
+    use_frame_audit: bool = Form(True),
 ):
     """流式执行完整流水线，逐步返回分析和迁移进度。"""
 

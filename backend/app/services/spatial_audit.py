@@ -17,18 +17,27 @@ from ..core.config import get_settings
 from ..models.video_structure import VideoStructure
 from .doubao_client import get_ark_client, parse_doubao_response
 from .frame_sampler import choose_frame_times, extract_frames, write_frame_manifest
+from .keyframe_selector import choose_hybrid_frame_times
 
 
 async def audit_spatial_with_frames(
     video_path: str,
     structure: VideoStructure,
     task_dir: Path,
-    max_frames: int = 48,
+    max_frames: int = 32,
 ) -> dict[str, Any]:
     """Run a frame-sequence spatial audit and persist the evidence."""
     frame_dir = task_dir / "spatial_audit_frames"
     shot_ranges = [(shot.start_time, shot.end_time) for shot in structure.shots]
-    times = choose_frame_times(structure.meta.duration, shot_ranges, max_frames=max_frames)
+    times = choose_hybrid_frame_times(
+        video_path,
+        structure.meta.duration,
+        shot_ranges=shot_ranges,
+        max_frames=max_frames,
+        debug_dir=task_dir / "algorithmic_keyframes",
+    )
+    if not times:
+        times = choose_frame_times(structure.meta.duration, shot_ranges, max_frames=max_frames)
     frames = extract_frames(video_path, frame_dir, times, width=360)
     write_frame_manifest(frames, task_dir / "spatial_audit_frames.json")
 
@@ -68,11 +77,13 @@ async def analyze_ordered_frames_with_doubao(
         )
 
     timeline = "\n".join(f"- frame {f['index']:03d}: {f['time']:.2f}s" for f in frames)
-    prompt = f"""你会看到一组按时间顺序排列的视频抽帧图片。每张图对应一个 frame index，时间戳如下：
+    prompt = f"""你会看到一组按时间顺序排列的视频关键帧图片。每张图对应一个 frame index，时间戳如下：
 
 {timeline}
 
-这不是完整视频，只用于空间轨迹审计。请不要推断音频、转场或剧情，只回答画面里主体的距离、位置、占比和空间角色。
+这些关键帧由本地算法根据镜头边界、画面差异、运动峰值、视觉多样性和时间覆盖选出。它们不是完整视频，只用于空间轨迹审计。
+请不要推断音频、转场或剧情，只回答画面里主体的距离、位置、占比和空间角色。
+如果连续关键帧显示主体画面占比变小或位置进入远端，请优先记录 near -> mid -> far -> tiny/environment 的空间轨迹；不要把跑步/走路本身当成核心结构，除非它直接解释主体距离变化。
 
 已有视频结构摘要：
 - 时长: {structure.meta.duration:.1f}s
@@ -80,7 +91,7 @@ async def analyze_ordered_frames_with_doubao(
 - 当前 spatial_pattern: {structure.transferable_features.spatial_pattern}
 - 当前 subject_trajectory: {structure.transferable_features.subject_trajectory}
 
-请严格返回 JSON：
+请严格返回 JSON。spatial_keyframes 最多输出 18 个真正发生空间角色变化的关键时间点，不要逐帧复述；recommended_segments 必须给出最适合 near/mid/far/tiny/environment/cta 的连续片段：
 {{
   "spatial_keyframes": [
     {{
@@ -122,9 +133,35 @@ async def analyze_ordered_frames_with_doubao(
     )
     raw = response.choices[0].message.content
     parsed = parse_doubao_response(raw)
+    if parsed.get("raw_response"):
+        parsed = _parse_spatial_audit_json(raw) or parsed
     if not parsed:
         parsed = {"raw_response": raw}
     return parsed
+
+
+def _parse_spatial_audit_json(raw: str) -> dict[str, Any] | None:
+    """Parse model JSON even when it is wrapped or has surrounding text."""
+    text = raw.strip()
+    if "```json" in text:
+        text = text.split("```json", 1)[1].split("```", 1)[0].strip()
+    elif "```" in text:
+        text = text.split("```", 1)[1].split("```", 1)[0].strip()
+
+    candidates = [text]
+    first = text.find("{")
+    last = text.rfind("}")
+    if first >= 0 and last > first:
+        candidates.append(text[first : last + 1])
+
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            return parsed
+    return None
 
 
 def merge_spatial_audit(structure: VideoStructure, audit: dict[str, Any]) -> VideoStructure:

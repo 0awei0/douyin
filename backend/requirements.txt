@@ -7,3 +7,6 @@ pydantic==2.9.0
 pydantic-settings==2.5.0
 volcengine-python-sdk==5.0.30
 Pillow==10.4.0
+numpy==2.4.6
+opencv-python-headless==4.13.0.92
+scenedetect==0.7

@@ -40,7 +40,7 @@ async def upload_video(file: UploadFile = File(...)):
 
 
 @router.post("/structure")
-async def analyze_structure(request: AnalyzeRequest, use_frame_audit: bool = False):
+async def analyze_structure(request: AnalyzeRequest, use_frame_audit: bool = True):
     """分析视频结构
 
     Args:

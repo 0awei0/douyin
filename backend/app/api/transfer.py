@@ -22,7 +22,7 @@ async def run_transfer(
     source_video_path: str,
     target_video_path: str,
     target_description: str | None = None,
-    use_frame_audit: bool = False,
+    use_frame_audit: bool = True,
 ):
     """执行结构迁移
 
