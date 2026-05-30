@@ -10,6 +10,7 @@ export default function PipelinePage() {
   const [sourceFile, setSourceFile] = useState<File | null>(null)
   const [targetFile, setTargetFile] = useState<File | null>(null)
   const [targetDesc, setTargetDesc] = useState('')
+  const [creativeBrief, setCreativeBrief] = useState('')
   const [result, setResult] = useState<PipelineResponse | null>(null)
   const [error, setError] = useState('')
   const [progress, setProgress] = useState('')
@@ -26,10 +27,16 @@ export default function PipelinePage() {
     setProgressEvents([])
 
     try {
-      const res = await runPipelineStream(sourceFile, targetFile, targetDesc || undefined, (event) => {
-        setProgress(event.title)
-        setProgressEvents((events) => [...events, event])
-      })
+      const res = await runPipelineStream(
+        sourceFile,
+        targetFile,
+        targetDesc || undefined,
+        creativeBrief || undefined,
+        (event) => {
+          setProgress(event.title)
+          setProgressEvents((events) => [...events, event])
+        },
+      )
       setResult(res)
       setStep('result')
     } catch (e: unknown) {
@@ -45,9 +52,11 @@ export default function PipelinePage() {
           sourceFile={sourceFile}
           targetFile={targetFile}
           targetDesc={targetDesc}
+          creativeBrief={creativeBrief}
           onSourceChange={setSourceFile}
           onTargetChange={setTargetFile}
           onDescChange={setTargetDesc}
+          onCreativeBriefChange={setCreativeBrief}
           onRun={handleRun}
           error={error}
         />
@@ -66,6 +75,7 @@ export default function PipelinePage() {
 
 const FLOW_STEPS = [
   { key: 'upload', label: '上传素材' },
+  { key: 'brief', label: '创作意图扩写' },
   { key: 'source_analysis', label: '爆款样例分析' },
   { key: 'target_analysis', label: '目标素材分析' },
   { key: 'transfer', label: '结构迁移' },
@@ -227,6 +237,17 @@ function EventDetail({ event }: { event: PipelineProgressEvent }) {
     )
   }
 
+  if (event.step === 'brief') {
+    const brief = objectValue(detail, 'creative_brief')
+    return (
+      <div className="mt-4 space-y-3">
+        <SummaryText label="意图摘要" value={textValue(brief, 'summary')} />
+        <SummaryText label="迁移优先级" value={listValue(brief, 'transfer_priority').join(' / ')} />
+        <SummaryText label="避免误判" value={listValue(brief, 'avoid_focus').join(' / ')} />
+      </div>
+    )
+  }
+
   if (event.step === 'transfer') {
     return (
       <div className="mt-4 space-y-3">
@@ -300,6 +321,11 @@ function textValue(detail: Record<string, unknown>, key: string) {
 function arrayValue(detail: Record<string, unknown>, key: string): Record<string, unknown>[] {
   const value = detail[key]
   return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null) : []
+}
+
+function objectValue(detail: Record<string, unknown>, key: string): Record<string, unknown> {
+  const value = detail[key]
+  return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {}
 }
 
 function listValue(detail: Record<string, unknown>, key: string): string[] {

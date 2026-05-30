@@ -55,6 +55,7 @@ def encode_video_base64(video_path: str) -> str:
 async def analyze_video_with_doubao(
     video_path: str,
     meta: VideoMeta,
+    analysis_context: dict | None = None,
 ) -> dict:
     """调用豆包视频理解 API 分析视频"""
     settings = get_settings()
@@ -81,6 +82,12 @@ async def analyze_video_with_doubao(
 5. 输出 spatial_keyframes 数组：逐项说明关键时间点、主体画面占比、主体位置、空间角色（near/mid/far/tiny/environment/cta）
 6. 如果人物远到很小，也必须记录为 tiny/far，不要忽略为普通环境
 7. 每个镜头的时长建议 2-6 秒，不要把明显不同的画面合并成一个长镜头"""
+
+    if analysis_context:
+        user_text += f"""
+
+用户补充的创作意图/观察提示（必须优先参考，尤其是亮点、不要强调的误判方向和迁移优先级）：
+{json.dumps(analysis_context, ensure_ascii=False, indent=2)}"""
 
     response = client.chat.completions.create(
         model=settings.ARK_MODEL,

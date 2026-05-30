@@ -1,4 +1,5 @@
-import { PipelineResponse } from '../api/client'
+import { useState } from 'react'
+import { PipelineResponse, revisePipelinePlan } from '../api/client'
 
 interface Props {
   result: PipelineResponse
@@ -6,7 +7,12 @@ interface Props {
 }
 
 export default function ResultView({ result, onBack }: Props) {
-  const { transfer, video, source_meta, target_meta } = result
+  const [currentResult, setCurrentResult] = useState(result)
+  const [revisionText, setRevisionText] = useState('')
+  const [revisionStatus, setRevisionStatus] = useState('')
+  const [revisionError, setRevisionError] = useState('')
+  const [isRevising, setIsRevising] = useState(false)
+  const { transfer, video, source_meta, target_meta, creative_brief } = currentResult
   const videoUrl = video.url || videoUrlFromPath(video.path)
   const videoFilename = video.filename || filenameFromPath(video.path) || 'transfer-video.mp4'
   const script = transfer.script ?? []
@@ -20,6 +26,35 @@ export default function ResultView({ result, onBack }: Props) {
   const coveragePercent = materialCoverage
     ? Math.min(100, Math.max(0, Math.round(materialCoverage.coverage_ratio * 100)))
     : 0
+  const briefSummary = typeof creative_brief?.summary === 'string' ? creative_brief.summary : ''
+  const quickRevisions = [
+    '更突出开头手势舞，少用准备动作',
+    '不要强调跑步，远景选择主体已经变小但站定的片段',
+    'CTA 搜索词更像校园挑战',
+    '节奏再快一点，分镜更紧凑',
+  ]
+
+  const applyRevision = async (text: string) => {
+    const instruction = text.trim()
+    if (!instruction) {
+      setRevisionError('请先输入调整要求')
+      return
+    }
+    setIsRevising(true)
+    setRevisionError('')
+    setRevisionStatus('正在理解你的调整，并重新生成视频...')
+    try {
+      const revised = await revisePipelinePlan(currentResult, instruction)
+      setCurrentResult(revised)
+      setRevisionText('')
+      setRevisionStatus('调整完成，视频和分镜已更新。')
+    } catch (e) {
+      setRevisionError(e instanceof Error ? e.message : '调整失败')
+      setRevisionStatus('')
+    } finally {
+      setIsRevising(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -31,6 +66,52 @@ export default function ResultView({ result, onBack }: Props) {
           <p className="text-sm text-green-600 break-words">
             视频已生成: {video.path} ({video.size_mb} MB)
           </p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex flex-col gap-2 mb-4">
+          <h3 className="text-lg font-semibold">方案确认与自然语言调整</h3>
+          <p className="text-sm text-gray-500">
+            先看分镜和视频预览，不满意可以直接描述想改哪里，AI 会改写方案并重新渲染。
+          </p>
+          {briefSummary && (
+            <p className="text-sm rounded-lg border bg-blue-50 px-3 py-2 text-blue-800">
+              创作意图：{briefSummary}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {quickRevisions.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+              disabled={isRevising}
+              onClick={() => applyRevision(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <textarea
+          className="w-full border rounded-lg p-3 text-sm min-h-24 resize-y focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="例如：第二段换成更早的手势舞，远景不要太空，搜索词改成校园闯天涯挑战..."
+          value={revisionText}
+          onChange={(e) => setRevisionText(e.target.value)}
+          disabled={isRevising}
+        />
+        <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isRevising}
+            onClick={() => applyRevision(revisionText)}
+          >
+            {isRevising ? '正在调整...' : '应用调整并重新生成'}
+          </button>
+          {revisionStatus && <span className="text-sm text-green-700">{revisionStatus}</span>}
+          {revisionError && <span className="text-sm text-red-600">{revisionError}</span>}
         </div>
       </div>
 
@@ -66,14 +147,14 @@ export default function ResultView({ result, onBack }: Props) {
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-lg shadow p-4">
           <h3 className="text-sm font-medium text-gray-500 mb-2">样例视频</h3>
-          <p className="text-sm">时长: {source_meta.duration.toFixed(1)}s</p>
-          <p className="text-sm">分辨率: {source_meta.resolution}</p>
-          <p className="text-sm">脚本段数: {source_meta.script_count}</p>
+          <p className="text-sm">时长: {source_meta?.duration?.toFixed(1) ?? '-'}s</p>
+          <p className="text-sm">分辨率: {source_meta?.resolution ?? '-'}</p>
+          <p className="text-sm">脚本段数: {source_meta?.script_count ?? '-'}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <h3 className="text-sm font-medium text-gray-500 mb-2">目标视频</h3>
-          <p className="text-sm">时长: {target_meta.duration.toFixed(1)}s</p>
-          <p className="text-sm">分辨率: {target_meta.resolution}</p>
+          <p className="text-sm">时长: {target_meta?.duration?.toFixed(1) ?? '-'}s</p>
+          <p className="text-sm">分辨率: {target_meta?.resolution ?? '-'}</p>
         </div>
       </div>
 

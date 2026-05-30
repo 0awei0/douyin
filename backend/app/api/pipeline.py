@@ -12,11 +12,13 @@ from typing import Any
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from pydantic import BaseModel
 
 from ..models.video_structure import VideoStructure
 from ..services.video_analyzer import analyze_video_structure
 from ..services.transfer import transfer_structure
 from ..services.video_generator import generate_transfer_video
+from ..services.creative_brief import expand_creative_brief, revise_transfer_with_instruction
 
 router = APIRouter(prefix="/api/pipeline", tags=["pipeline"])
 
@@ -26,11 +28,20 @@ OUTPUT_DIR = BASE_DIR / "outputs"
 VIDEO_OUTPUT_DIR = OUTPUT_DIR / "videos"
 
 
+class RevisePipelineRequest(BaseModel):
+    transfer: dict[str, Any]
+    instruction: str
+    target_video_path: str
+    source_video_path: str | None = None
+    creative_brief: dict[str, Any] | None = None
+
+
 @router.post("/run")
 async def run_pipeline(
     source_video: UploadFile = File(...),
     target_video: UploadFile = File(...),
     target_description: str = Form(None),
+    creative_brief: str = Form(None),
     use_frame_audit: bool = Form(True),
 ):
     """一键执行完整流水线
@@ -42,6 +53,7 @@ async def run_pipeline(
             source_video=source_video,
             target_video=target_video,
             target_description=target_description,
+            creative_brief=creative_brief,
             use_frame_audit=use_frame_audit,
         )
         return JSONResponse(result)
@@ -54,6 +66,7 @@ async def run_pipeline_stream(
     source_video: UploadFile = File(...),
     target_video: UploadFile = File(...),
     target_description: str = Form(None),
+    creative_brief: str = Form(None),
     use_frame_audit: bool = Form(True),
 ):
     """流式执行完整流水线，逐步返回分析和迁移进度。"""
@@ -70,6 +83,7 @@ async def run_pipeline_stream(
                     source_video=source_video,
                     target_video=target_video,
                     target_description=target_description,
+                    creative_brief=creative_brief,
                     use_frame_audit=use_frame_audit,
                     on_event=on_event,
                 )
@@ -110,6 +124,7 @@ async def _execute_pipeline(
     source_video: UploadFile,
     target_video: UploadFile,
     target_description: str | None,
+    creative_brief: str | None,
     use_frame_audit: bool,
     on_event: Callable[[dict[str, Any]], Any] | None = None,
 ) -> dict[str, Any]:
@@ -132,8 +147,25 @@ async def _execute_pipeline(
         ),
     )
 
+    expanded_brief: dict[str, Any] = {}
+    if creative_brief or target_description:
+        await _emit(on_event, _progress("brief", "running", "正在扩写创作意图", "把用户输入整理成亮点、避坑点和迁移优先级。"))
+        expanded_brief = await asyncio.to_thread(
+            lambda: asyncio.run(expand_creative_brief(creative_brief, target_description))
+        )
+        await _emit(
+            on_event,
+            _progress(
+                "brief",
+                "done",
+                "创作意图已扩写",
+                str(expanded_brief.get("summary") or "已生成结构化创作约束。"),
+                {"creative_brief": expanded_brief},
+            ),
+        )
+
     await _emit(on_event, _progress("source_analysis", "running", "正在分析样例视频结构", "提取 hook、节奏、空间轨迹和包装方式。"))
-    source = await _analyze_video_structure(str(source_path), use_frame_audit=use_frame_audit)
+    source = await _analyze_video_structure(str(source_path), use_frame_audit=use_frame_audit, analysis_context=expanded_brief)
     await _emit(
         on_event,
         _progress(
@@ -146,7 +178,7 @@ async def _execute_pipeline(
     )
 
     await _emit(on_event, _progress("target_analysis", "running", "正在分析目标素材", "识别目标视频中可承接 near/mid/far/环境释放的片段。"))
-    target = await _analyze_video_structure(str(target_path), use_frame_audit=use_frame_audit)
+    target = await _analyze_video_structure(str(target_path), use_frame_audit=use_frame_audit, analysis_context=expanded_brief)
     await _emit(
         on_event,
         _progress(
@@ -166,6 +198,7 @@ async def _execute_pipeline(
         target_description=target_description,
         target_meta={"duration": target.meta.duration, "resolution": target.meta.resolution},
         target_structure=target,
+        creative_brief=expanded_brief,
     )
 
     transfer_dir = OUTPUT_DIR / "transfer"
@@ -227,6 +260,10 @@ async def _execute_pipeline(
             "resolution": target.meta.resolution,
         },
         "transfer": transfer_result,
+        "creative_brief": expanded_brief,
+        "source_video_path": str(source_path),
+        "target_video_path": str(target_path),
+        "transfer_path": str(transfer_file),
         "video": {
             "path": video_path,
             "url": _video_url(video_filename),
@@ -234,6 +271,70 @@ async def _execute_pipeline(
             "size_mb": round(size_mb, 2),
         },
     }
+
+
+@router.post("/revise")
+async def revise_pipeline_plan(request: RevisePipelineRequest):
+    """Revise a generated transfer plan from natural language and re-render it."""
+    if not request.instruction.strip():
+        raise HTTPException(status_code=400, detail="请填写调整要求")
+
+    target_path = Path(request.target_video_path)
+    if not target_path.exists():
+        raise HTTPException(status_code=404, detail=f"目标视频不存在: {request.target_video_path}")
+
+    source_path = Path(request.source_video_path) if request.source_video_path else None
+    if source_path and not source_path.exists():
+        source_path = None
+
+    try:
+        revised = await asyncio.to_thread(
+            lambda: asyncio.run(
+                revise_transfer_with_instruction(
+                    transfer=request.transfer,
+                    instruction=request.instruction,
+                    creative_brief=request.creative_brief,
+                )
+            )
+        )
+
+        run_id = f"rev_{str(uuid.uuid4())[:8]}"
+        transfer_dir = OUTPUT_DIR / "transfer"
+        os.makedirs(transfer_dir, exist_ok=True)
+        transfer_file = transfer_dir / f"transfer_{run_id}.json"
+        transfer_file.write_text(json.dumps(revised, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        os.makedirs(VIDEO_OUTPUT_DIR, exist_ok=True)
+        video_filename = f"video_{run_id}.mp4"
+        video_path = str(VIDEO_OUTPUT_DIR / video_filename)
+        await asyncio.to_thread(
+            generate_transfer_video,
+            transfer_result_path=str(transfer_file),
+            target_video_path=str(target_path),
+            output_path=video_path,
+            use_ai_image=True,
+            source_video_path=str(source_path) if source_path else None,
+        )
+        size_mb = os.path.getsize(video_path) / 1024 / 1024
+        return JSONResponse(
+            {
+                "status": "success",
+                "run_id": run_id,
+                "transfer": revised,
+                "creative_brief": request.creative_brief or {},
+                "source_video_path": str(source_path) if source_path else "",
+                "target_video_path": str(target_path),
+                "transfer_path": str(transfer_file),
+                "video": {
+                    "path": video_path,
+                    "url": _video_url(video_filename),
+                    "filename": video_filename,
+                    "size_mb": round(size_mb, 2),
+                },
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"方案调整失败: {str(e)}")
 
 
 @router.get("/videos/{filename}")
@@ -266,9 +367,19 @@ async def _save_uploads(source_video: UploadFile, target_video: UploadFile) -> t
     return run_id, source_path, target_path
 
 
-async def _analyze_video_structure(video_path: str, use_frame_audit: bool) -> VideoStructure:
+async def _analyze_video_structure(
+    video_path: str,
+    use_frame_audit: bool,
+    analysis_context: dict[str, Any] | None = None,
+) -> VideoStructure:
     return await asyncio.to_thread(
-        lambda: asyncio.run(analyze_video_structure(video_path, use_frame_audit=use_frame_audit))
+        lambda: asyncio.run(
+            analyze_video_structure(
+                video_path,
+                use_frame_audit=use_frame_audit,
+                analysis_context=analysis_context,
+            )
+        )
     )
 
 
@@ -277,6 +388,7 @@ async def _transfer_structure(
     target_description: str,
     target_meta: dict[str, Any],
     target_structure: VideoStructure,
+    creative_brief: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return await asyncio.to_thread(
         lambda: asyncio.run(
@@ -285,6 +397,7 @@ async def _transfer_structure(
                 target_description=target_description,
                 target_meta=target_meta,
                 target_structure=target_structure,
+                creative_brief=creative_brief,
             )
         )
     )

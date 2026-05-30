@@ -19,6 +19,7 @@ async def transfer_structure(
     target_description: str,
     target_meta: dict | None = None,
     target_structure: VideoStructure | None = None,
+    creative_brief: dict | None = None,
 ) -> dict:
     """将样例结构迁移到新内容
 
@@ -60,6 +61,11 @@ async def transfer_structure(
             if spatial:
                 target_info += f"  空间: {', '.join(spatial)}\n"
 
+    creative_context = ""
+    if creative_brief:
+        creative_context = "\n\n## 用户创作意图与迁移约束\n"
+        creative_context += json.dumps(creative_brief, ensure_ascii=False, indent=2)
+
     # 构建用户消息
     user_msg = f"""## 样例视频结构
 
@@ -68,6 +74,7 @@ async def transfer_structure(
 ## 目标内容
 
 {target_info}
+{creative_context}
 
 请基于样例视频的创作套路，为目标内容生成新的视频创作方案。"""
 

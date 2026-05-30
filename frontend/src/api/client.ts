@@ -42,9 +42,13 @@ export interface GenerateResponse {
 export interface PipelineResponse {
   status: string
   run_id: string
-  source_meta: VideoMeta
-  target_meta: VideoMeta
+  source_meta?: VideoMeta
+  target_meta?: VideoMeta
   transfer: TransferResult
+  creative_brief?: Record<string, unknown>
+  source_video_path?: string
+  target_video_path?: string
+  transfer_path?: string
   video: {
     path: string
     url?: string
@@ -233,11 +237,13 @@ export async function runPipeline(
   sourceVideo: File,
   targetVideo: File,
   targetDescription?: string,
+  creativeBrief?: string,
 ): Promise<PipelineResponse> {
   const formData = new FormData()
   formData.append('source_video', sourceVideo)
   formData.append('target_video', targetVideo)
   if (targetDescription) formData.append('target_description', targetDescription)
+  if (creativeBrief) formData.append('creative_brief', creativeBrief)
   const res = await fetch(`${BASE_URL}/pipeline/run`, {
     method: 'POST',
     body: formData,
@@ -250,12 +256,14 @@ export async function runPipelineStream(
   sourceVideo: File,
   targetVideo: File,
   targetDescription: string | undefined,
+  creativeBrief: string | undefined,
   onEvent: (event: PipelineProgressEvent) => void,
 ): Promise<PipelineResponse> {
   const formData = new FormData()
   formData.append('source_video', sourceVideo)
   formData.append('target_video', targetVideo)
   if (targetDescription) formData.append('target_description', targetDescription)
+  if (creativeBrief) formData.append('creative_brief', creativeBrief)
   formData.append('use_frame_audit', 'true')
 
   const res = await fetch(`${BASE_URL}/pipeline/run/stream`, {
@@ -299,4 +307,29 @@ export async function runPipelineStream(
 
   if (!finalResult) throw new Error('流水线没有返回最终结果')
   return finalResult
+}
+
+export async function revisePipelinePlan(
+  result: PipelineResponse,
+  instruction: string,
+): Promise<PipelineResponse> {
+  const res = await fetch(`${BASE_URL}/pipeline/revise`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      transfer: result.transfer,
+      instruction,
+      source_video_path: result.source_video_path,
+      target_video_path: result.target_video_path,
+      creative_brief: result.creative_brief,
+    }),
+  })
+  if (!res.ok) throw await readError(res, '方案调整失败')
+  const revised = await res.json()
+  return {
+    ...result,
+    ...revised,
+    source_meta: result.source_meta,
+    target_meta: result.target_meta,
+  }
 }

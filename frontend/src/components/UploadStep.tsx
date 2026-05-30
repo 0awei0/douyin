@@ -2,17 +2,25 @@ interface Props {
   sourceFile: File | null
   targetFile: File | null
   targetDesc: string
+  creativeBrief: string
   onSourceChange: (f: File | null) => void
   onTargetChange: (f: File | null) => void
   onDescChange: (d: string) => void
+  onCreativeBriefChange: (d: string) => void
   onRun: () => void
   error: string
 }
 
 export default function UploadStep({
-  sourceFile, targetFile, targetDesc,
-  onSourceChange, onTargetChange, onDescChange, onRun, error,
+  sourceFile, targetFile, targetDesc, creativeBrief,
+  onSourceChange, onTargetChange, onDescChange, onCreativeBriefChange, onRun, error,
 }: Props) {
+  const briefExamples = [
+    '突出开头近景手势舞，后面强调主体从近到远变小，不要把跑步当重点。',
+    '保留笑场和互动感，节奏轻快，结尾做抖音搜索挑战 CTA。',
+    '想要更像校园挑战，先手势动作，再远景环境释放。',
+  ]
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -56,6 +64,33 @@ export default function UploadStep({
           value={targetDesc}
           onChange={(e) => onDescChange(e.target.value)}
         />
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex flex-col gap-2 mb-4">
+          <h2 className="text-lg font-semibold">创作亮点与迁移要求</h2>
+          <p className="text-sm text-gray-500">
+            写给 AI 的创作提示。可以很口语，系统会先扩写成结构化约束，再参与分析和迁移。
+          </p>
+        </div>
+        <textarea
+          className="w-full border rounded-lg p-3 text-sm min-h-28 resize-y focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="例如：开头有近景手势舞，后面主体越来越远；不要突出跑步，要突出近到远的操场空间感..."
+          value={creativeBrief}
+          onChange={(e) => onCreativeBriefChange(e.target.value)}
+        />
+        <div className="mt-3 flex flex-wrap gap-2">
+          {briefExamples.map((example) => (
+            <button
+              key={example}
+              type="button"
+              className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs text-blue-700 hover:bg-blue-100 transition-colors"
+              onClick={() => onCreativeBriefChange(example)}
+            >
+              {example}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && (

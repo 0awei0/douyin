@@ -47,14 +47,18 @@ def get_video_meta(video_path: str) -> VideoMeta:
     return VideoMeta(duration=duration, resolution=f"{w}x{h}", fps=fps)
 
 
-async def analyze_video_structure(video_path: str, use_frame_audit: bool | None = None) -> VideoStructure:
+async def analyze_video_structure(
+    video_path: str,
+    use_frame_audit: bool | None = None,
+    analysis_context: dict | None = None,
+) -> VideoStructure:
     task_id = str(uuid.uuid4())[:8]
 
     print(f"[{task_id}] 提取视频元信息...")
     meta = get_video_meta(video_path)
 
     print(f"[{task_id}] 调用豆包视频理解 API...")
-    doubao_result = await analyze_video_with_doubao(video_path, meta)
+    doubao_result = await analyze_video_with_doubao(video_path, meta, analysis_context=analysis_context)
 
     print(f"[{task_id}] 整合分析结果...")
     structure = build_video_structure(task_id, meta, doubao_result)
