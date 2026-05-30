@@ -89,6 +89,9 @@ async def revise_transfer_with_instruction(
 修改规则:
 - 保留 storyboard/script/material_needs/timeline_metrics/material_coverage 等顶层结构。
 - 如果用户要求换片段，优先修改 storyboard 中对应 shot 的 source/content/subtitle/edit。
+- 只修改用户明确提到的镜头或字段；用户没有提到的 shot 必须保持原来的 source、duration、edit.spatial_role 和顺序。
+- 如果用户只要求调整 near/mid，far、empty、cta 的 source 必须保持不变。
+- 如果用户说“保持远景/环境释放”，不得改动 far/empty 镜头的 source。
 - 不要输出解释文字，只返回完整 JSON。
 - 确保 storyboard 每个 shot 有 source、duration、content、subtitle、edit.spatial_role。
 """
